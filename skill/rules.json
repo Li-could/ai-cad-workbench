@@ -1,0 +1,282 @@
+{
+  "schema_version": "1.0",
+  "name": "cad-drawing-nl-modifier",
+  "description": "TD50-40G 立式管道泵安装图的自然语言受控修改规则。所有定标常量来自原图实测与方案文档交叉验证，禁止凭截图目测。",
+  "drawing": {
+    "model": "TD50-40G",
+    "source_dxf": "output/TD50-40G_真实基线_clean.dxf",
+    "deliverable": "DWG (AC1032 / AutoCAD 2018)，CAXA 与 SolidWorks/eDrawings 实测可打开",
+    "unit": "DXF 图面单位；mm 通过局部定标换算"
+  },
+  "calibration": {
+    "K_V": {
+      "value": 1.9523,
+      "basis": "风罩顶 HOOD_TOP_Y=1501.2 到 基础平面 FOUNDATION_TOP_Y=-2.1 = 770mm",
+      "formula": "(1501.2 - (-2.1)) / 770"
+    },
+    "K_H": {
+      "value": 1.2481,
+      "basis": "必须用原图 297 尺寸线本身 handle C55: x=50967.4..51338.1, len=370.7 定标",
+      "formula": "370.7 / 297",
+      "critical_warning": "严禁用风罩左右壁间距 440.7 定标（会得到 1.4838），那会把当前 D2 误算成 237mm、位移 84.5 单位、把接线盒从中间劈开。机械制图的尺寸线箭头两端各内缩约 35 单位，尺寸线长度才是 297 对应的真值。"
+    },
+    "how_to_recalibrate": "换图纸时必须从原始 CAD 量取对应尺寸线端点（不是轮廓边界），并与方案文档 from/to 数值交叉验证。",
+    "H2_ORIGINAL_MM": {
+      "value": 490.0,
+      "basis": "尺寸链：490(H2) + 175 + 105 = 770(总高)；反推法兰贴合面 y=544.55，175下端 y=202.90，105下端 y=-2.10 与图中基础面精确吻合",
+      "critical_warning": "严禁用 y=643.8 当法兰贴合面（那是泵体上部另一条线），会把原 H2 算成 439，导致 H2=443 时风罩反而升高而非降低 47mm。"
+    },
+    "BASE_TOTAL_H_MM": 770.0,
+    "LOWER_SEGMENTS_MM": {
+      "value": 280.0,
+      "detail": "175+105，H2 改动时保持不动"
+    }
+  },
+  "rules": [
+    {
+      "key": "H2",
+      "rule_id": "H2_AXIAL_HEIGHT",
+      "aliases": [
+        "H2",
+        "红色",
+        "风罩高度",
+        "风罩总高",
+        "风罩",
+        "罩壳高度",
+        "安装面到风罩顶",
+        "总高",
+        "整体高度",
+        "770",
+        "723"
+      ],
+      "meaning": "安装法兰贴合面(FLANGE_Y=544.55，尺寸链校准) → 风罩最高点的轴向总高；原值490mm",
+      "default_target_mm": 443.0,
+      "operator": "eq",
+      "tolerance_mm": 0.5,
+      "unit": "mm",
+      "delta_formula": "(target - 490) * K_V   # 490→443 时为 -91.8 单位（降低47mm）",
+      "geometry": {
+        "op": "deform",
+        "object": "罩壳本体",
+        "detail": "风罩顶帽整体(y>=1321)下移：顶盖、两侧壁上端、顶帽斜角一起变形；绿色罩口/机身/安装面/图框不动",
+        "region_filter": [
+          "x in [HOOD_LEFT_X-20, HOOD_RIGHT_X+20]",
+          "bb.y_max >= 1321 (顶帽底 HOOD_CAP_BOTTOM_Y)",
+          "排除 y 跨度>300 的贯通竖线（电机轴线）",
+          "排除悬在顶之上者、贯通长线(>700单位)"
+        ]
+      },
+      "invariants": [
+        "绿色罩形不动",
+        "安装面不动",
+        "机身不动",
+        "图框线不动"
+      ],
+      "forbidden": [
+        "不得把风罩自身长度改成目标值(目标是总高)",
+        "不得从截图目测移动量"
+      ],
+      "original_mm": 490.0,
+      "total_height_link": {
+        "enabled": true,
+        "formula": "新总高 = H2目标 + 175 + 105 = 443+280 = 723",
+        "action": "把原图 770 尺寸数字(handle C5F)改为新总高；总高尺寸线 C5C 上端随风罩顶下移；下方两段175/105保持不动",
+        "deliverable": "交付 DWG/DXF 内同步更新（原图黑色样式，非彩色标注）"
+      },
+      "exclusions": [
+        "C55（297尺寸线 y≈1495）：原图尺寸标注，H2降低风罩顶时不得随之移动；其297文字C58(y≈1521)也保持原位，否则线与文字散架、尺寸线悬空压到风罩顶盖。用户要求297标注保持完整原样"
+      ],
+      "companion_lines": [
+        "C5A（顶帽引出线，基线 y≈1375.6，x=51153→52103 从电机轴线到总高尺寸线）：与风罩顶帽线 9FD/A06 同高，必须随 H2 一起下移 _delta_h2。历史 bug：因其 x 跨度 950(>700) 且右端越过风罩右壁，被 x范围+长线 双重规则排除，导致 9FD/A06 下移到 1283.8 而 C5A 留在 1375.6，线与顶帽断裂悬空（用户 eDrawings 红框圈出的错线）。修复：H2 循环后单独把 C5A 整体下移 _delta_h2，保持与顶帽齐平、右端仍搭到总高尺寸线。"
+      ],
+      "critical_warning": " 另：C5A 顶帽引出线必须随动，勿被长线排除误杀。"
+    },
+    {
+      "key": "D2",
+      "rule_id": "D2_RADIAL_TERMINAL_BOX",
+      "aliases": [
+        "D2",
+        "蓝色",
+        "接线盒伸出",
+        "接线盒最外端",
+        "径向伸出",
+        "左右伸出",
+        "电机轴线到接线盒",
+        "接线盒"
+      ],
+      "meaning": "竖直电机轴线(AXIS_X=51154.2) → 接线盒最外端(BOX_OUTER_X=51505.9)的水平径向距离",
+      "default_target_mm": 294.0,
+      "operator": "eq",
+      "tolerance_mm": 0.5,
+      "unit": "mm",
+      "delta_formula": "target*K_H - (BOX_OUTER_X - AXIS_X)",
+      "geometry": {
+        "op": "move",
+        "object": "接线盒外盖(含右侧锁扣、顶部电缆接头圆弧、连接臂右端)",
+        "detail": "外盖整体沿 X 平移；跨接电机的连接臂只拉伸右端；旋钮座是本体固有件，不随动",
+        "region_filter": [
+          "y in [730,1045]",
+          "x 向约束排除贯通图框线",
+          "排除宽>800单位的贯通横线"
+        ]
+      },
+      "invariants": [
+        "旋钮座(同心圆 AB5/AB6 + 梯形连接楔 AB7/AB8/AB9/A14 + 竖键 A1C/A1D/A1E/A1F/A20/A21/A24/A3D)保持原位——中心落在 x[51350,51420]&y[985,1040] 的实体直接排除外移",
+        "固定内部件不动",
+        "接线盒上下高度不得修改(变更是径向而非轴向)",
+        "图框线/标题栏/俯视图 handle 级零改动"
+      ],
+      "forbidden": [
+        "不得把盒子上下高度改成目标值(294是水平径向距离)",
+        "不得用原图 297 替换为 294(二者不是同一尺寸，297 原样保留)",
+        "不得只移旋钮圆弧而留下连接斜线(会把旋钮座锯成<形楔)"
+      ],
+      "critical_warning": "原图297不是D2，不能直接替换；D2是竖直电机轴线→接线盒最外端的水平径向距离(当前281.8mm)。完整外盖随动、固定内部件保持、旋钮座保护；虚线框仅提示连接区域非轴端定位。",
+      "annotation_style": {
+        "form": "水平尺寸线 电机轴线→接线盒最外端（径向伸出量，非盒高）",
+        "left": "起于电机轴线，左端实心箭头",
+        "right": "右端画向上箭头 + 竖线落到接线盒外盖底边(y≈737，实体9D8/9D9/9DA下端)，作为‘接线盒最外端’投影界线",
+        "label": "② D2 = 294 mm 居中于水平线上方",
+        "critical": "不要画成两端箭头+竖线落到盒顶；不要改动原图297（它不是D2）"
+      }
+    },
+    {
+      "key": "shaft",
+      "rule_id": "SHAFT_EXT_PLUS20",
+      "aliases": [
+        "轴伸",
+        "轴端",
+        "轴端+20",
+        "轴伸加20",
+        "E+20",
+        "加20",
+        "江潮标准轴伸",
+        "锥轴"
+      ],
+      "meaning": "在江潮标准轴伸 E 基础上沿电机轴向泵侧多伸出 N mm",
+      "default_target_mm": 20.0,
+      "operator": "plus",
+      "tolerance_mm": 0.5,
+      "unit": "mm",
+      "delta_formula": "target*K_V",
+      "geometry": {
+        "op": "extend",
+        "object": "轴端矩形底边(B7A) + 两侧竖线(B7D/B7E)下端 + 键槽区",
+        "detail": "轴端沿轴向泵侧(图中向下)伸出；键槽整体随动；支架/法兰/螺栓不动",
+        "region_filter": [
+          "KEYWAY_BOX=(51140,51170,526,556) 按 bbox 识别键槽含 ARC"
+        ]
+      },
+      "invariants": [
+        "键槽保留",
+        "虚线框内支撑/法兰不得拉长",
+        "不得把 +N 串联到 H2(不同尺寸链)"
+      ],
+      "forbidden": [
+        "不得把 20 加到风罩 H2",
+        "不得拉长支撑/法兰实体"
+      ],
+      "critical_warning": "新轴伸=江潮标准轴伸E+20mm，沿电机轴线向泵侧伸出；本图未清楚显示完整轴端，需在电机图确认轴肩与真正端面；键槽保持、435基础边与虚线框内支架法兰不拉长20。"
+    }
+  ],
+  "global_invariants": [
+    "原始 DWG 只读保存，所有修改在副本执行",
+    "只改明确要求涉及的实体，范围外 handle 级零改动",
+    "图纸主体保持原图黑白样式，主体样子不能动",
+    "彩色尺寸标注只能进入对照图，绝不混入交付 DWG",
+    "原图尺寸标注(297/770/175/105/400/200/118kg)全部保留不覆盖",
+    "实体数零增删(before==after)"
+  ],
+  "delivery": {
+    "pipeline": [
+      "aspose 只读 DWG→DXF",
+      "dxf_cleaner 清洗",
+      "ezdxf 受控变形",
+      "五道质检",
+      "ODA File Converter 写 DWG(AC1032)"
+    ],
+    "qa_gates": [
+      {
+        "name": "audit",
+        "pass": "errors==0"
+      },
+      {
+        "name": "side_effects",
+        "pass": "unexpected_modified==0 and deleted_entities==0"
+      },
+      {
+        "name": "annotations",
+        "pass": "全部原标注 token 仍在"
+      },
+      {
+        "name": "entity_count",
+        "pass": "before==after"
+      },
+      {
+        "name": "reopen",
+        "pass": "eDrawings/CAXA/SolidWorks 可打开无报错"
+      }
+    ],
+    "annotation_style": {
+      "H2": "红色竖直尺寸线，两端实心箭头，端部短横搭风罩左壁/法兰面，竖排文字在线左侧空白带",
+      "D2": "蓝色水平尺寸线 轴线→盒最外端，两端实心箭头，右端下落箭头指盒顶外角，文字居中于线上方；左端不向下引线以免压原297文字",
+      "shaft": "橙色左侧引出框+水平引线+实心箭头指轴端新底边左角，双行文字",
+      "text_no_overlap": "采样级碰撞检测：新文字与原图线条/文字距离≥10单位"
+    },
+    "compat": "ODA 导出 AC1032；aspose 打开工作副本需 chmod 666；源文件保持只读",
+    "zoom_view": {
+      "viewport": [
+        50280,
+        52250,
+        280,
+        1520
+      ],
+      "fs_ann": 16,
+      "fs_orig": 11,
+      "purpose": "三处标注放大图，避免全图缩放导致文字重叠；标注清晰可读",
+      "download_kind": "zoom.png"
+    },
+    "source_file_warning": "源文件必须是原始基线（风罩顶 C53=1501.2、C5A=1375.6）。若误用已交付的修改版桌面 TD50-40G.dwg 作源再跑 H2=443，会因顶帽已在 1241~1416 而二次下移 -91.8，把风罩顶压到 1325（重复变形）。引擎的 _delta_h2 是相对原始基线的绝对位移，不具备幂等性。工作台应始终以内置/上传的原始基线为源；用户想再改数值时从原始基线重跑。",
+    "golden_example": {
+      "status": "用户确认的最棒版本（定版基准）",
+      "recipe_id": "td50-final-443-294-20",
+      "targets": {
+        "H2": 443.0,
+        "D2": 294.0,
+        "shaft": 20.0
+      },
+      "total_height_mm": 723,
+      "source": "内置干净基线 input/TD50-40G.dwg（C53顶=1501.2、C5A=1375.6）",
+      "workbench_demo": "/api/demo/td50 只复用带 recipe_id 且基于内置源执行成功的任务，不再误抓历史中间版本（如455/12/D2不动）",
+      "deliverables": {
+        "dwg": "output/TD50-40G_最终定版.dwg",
+        "dxf": "output/TD50-40G_最终定版.dxf",
+        "zoom_png": "output/对照_最终定版_放大图.png",
+        "full_png": "output/对照_最终定版_全图.png"
+      },
+      "verified_task": "d663f685b4b9（新示例）/ 21e3c1f8eeb0（用户确认原型）"
+    }
+  },
+  "parsing_policy": {
+    "target_source": "用户口语中的数值为唯一目标值来源，禁止凭截图估算",
+    "default_fallback": "用户提到某规则但没给数值时，沿用该规则 default_target_mm",
+    "ambiguous": "无法判断改哪个规则或数值时，必须追问，不得猜测执行",
+    "output_schema": {
+      "targets": {
+        "H2": "number|null",
+        "D2": "number|null",
+        "shaft": "number|null"
+      },
+      "enabled": [
+        "H2",
+        "D2",
+        "shaft"
+      ],
+      "confidence": "0-1",
+      "summary": "一句话复述听懂的内容",
+      "questions": [
+        "需要追问的问题列表，无则空"
+      ]
+    }
+  }
+}

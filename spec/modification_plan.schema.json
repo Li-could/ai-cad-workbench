@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CAD 结构化修改计划（依据项目建设方案第六章）",
+  "description": "AI 不直接输出任意代码，而是输出受控的修改指令对象，由后端校验后映射到白名单 CAD 操作。handle/图层/目标值必须由真实 DWG 解析结果与用户要求确定，不得照搬示例值。",
+  "type": "object",
+  "required": ["task_id", "source_file", "plan_status", "operations"],
+  "properties": {
+    "task_id": { "type": "string", "description": "任务唯一 ID" },
+    "source_file": { "type": "string", "description": "原始 DWG 文件名（只读保存，绝不覆盖）" },
+    "plan_status": {
+      "type": "string",
+      "enum": ["draft", "awaiting_confirmation", "confirmed", "executed", "rejected"],
+      "description": "计划状态。涉及关键尺寸/低置信度定位时必须 awaiting_confirmation"
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "requirement": {
+      "type": "object",
+      "description": "来自用户自然语言 + 参考图 OCR/视觉的解析结果",
+      "properties": {
+        "user_text": { "type": "string" },
+        "reference_image": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "text", "confidence", "source"],
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string", "description": "一条可核对的修改要求" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+              "source": { "type": "string", "enum": ["user_text", "reference_image", "knowledge_base", "inferred"] },
+              "evidence": { "type": "string", "description": "依据：图中框注/尺寸引线与定位线索" }
+            }
+          }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/operation" }
+    },
+    "global_invariants": {
+      "type": "array",
+      "description": "全局免疫约束：修改范围外对象不得变化",
+      "items": { "type": "string" }
+    },
+    "verification": {
+      "type": "object",
+      "description": "执行后必须通过的校验",
+      "properties": {
+        "reopen_test": { "type": "boolean", "default": true, "description": "用目标 CAD 重新打开并保存" },
+        "entity_count_check": { "type": "boolean", "default": true },
+        "dimension_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["dimension", "expected"],
+            "properties": {
+              "dimension": { "type": "string" },
+              "expected": { "type": ["number", "string"] },
+              "tolerance": { "type": "number", "default": 0.01 }
+            }
+          }
+        },
+        "unchanged_region_check": { "type": "boolean", "default": true }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "original_sha256": { "type": "string" },
+        "output_file": { "type": "string" },
+        "executed_at": { "type": "string", "format": "date-time" },
+        "executor": { "type": "string", "description": "CAD 执行引擎与版本" },
+        "results": { "type": "array", "items": { "type": "object" } }
+      }
+    }
+  },
+  "definitions": {
+    "operation": {
+      "type": "object",
+      "required": ["op_id", "operation", "target", "params", "risk", "verification", "requires_confirmation"],
+      "properties": {
+        "op_id": { "type": "string", "description": "如 OP-01" },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "update_text",
+            "update_dimension",
+            "move_entity",
+            "scale_entity",
+            "stretch_entity",
+            "add_entity",
+            "delete_entity",
+            "set_layer"
+          ],
+          "description": "白名单 CAD 操作；后端校验后映射，禁止任意脚本"
+        },
+        "target": {
+          "type": "object",
+          "required": ["handle"],
+          "properties": {
+            "handle": { "type": "string", "description": "真实 DWG 解析出的实体句柄，如 'A12F'；未知则填 'PENDING'" },
+            "entity_type": { "type": "string" },
+            "layer": { "type": "string" },
+            "text_match": { "type": "string", "description": "辅助定位：现有文字内容" },
+            "near": { "type": "string", "description": "辅助定位：邻近尺寸/几何特征描述" },
+            "locate_confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "params": {
+          "type": "object",
+          "description": "操作参数。几何值单位默认 mm，须来自真实图纸或用户明确给出",
+          "properties": {
+            "new_text": { "type": "string" },
+            "new_value": { "type": "number" },
+            "target_value": { "type": "number" },
+            "delta_x": { "type": "number" },
+            "delta_y": { "type": "number" },
+            "axis": { "type": "string", "enum": ["x", "y", "radial", "axial"] },
+            "keep": { "type": "array", "items": { "type": "string" }, "description": "必须保持不变的属性/部件" }
+          }
+        },
+        "reason": { "type": "string", "description": "参考图哪条要求触发本操作" },
+        "forbidden": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "本操作禁止的连带动作（负面知识，如'+20不得加到H2'）"
+        },
+        "risk": { "type": "string", "enum": ["low", "medium", "high"] },
+        "requires_confirmation": { "type": "boolean", "description": "关键尺寸/低置信度定位必须为 true" },
+        "verification": { "type": "string", "description": "本操作执行后如何验证" }
+      }
+    }
+  }
+}

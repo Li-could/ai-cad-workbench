@@ -1,0 +1,68 @@
+{
+  "drawing": "TD50-40G 立式管道泵安装图",
+  "source_dwg": "input/TD50-40G.dwg",
+  "reference_image": "input/TD50-40G_修改要求参考图.jpg",
+  "note": "依据项目建设方案第13章第三步：把 PNG 要求整理成'原内容—目标内容—定位依据—验证方式'清单。原内容当前值必须从原始 CAD 实测，不从图片像素估算。",
+  "requirements": [
+    {
+      "id": "R1",
+      "marker": "① 红色",
+      "rule_id": "H2_AXIAL_HEIGHT",
+      "dimension": "H2",
+      "definition": "安装法兰贴合面 → 风罩最高点的轴向总高",
+      "original_content": "原图为 H2 实际标注（当前值待从原始 DWG 量取，参考图示意约 418mm，不可作为真值）",
+      "target_content": "H2 = 443 mm",
+      "locate_basis": [
+        "参考图红色竖直尺寸线 H2",
+        "知识卡 H2_AXIAL_HEIGHT.aliases（H2/风罩总高/风罩高度）",
+        "原 DWG 中 H2 尺寸标注实体或罩壳图层"
+      ],
+      "action": "改变罩壳本体轴向长度：两侧壁变形、完整罩壳一起移动；安装面以下几何锁定",
+      "invariants": ["绿色罩形保持", "安装面保持", "机身保持", "443 是总高不是风罩自身长度"],
+      "forbidden": ["不得把风罩自身长度改成443", "不得从截图目测移动量"],
+      "verification": "重开 DWG 后测安装法兰面到风罩顶 = 443±0.5mm；检查机身/安装面未变",
+      "risk": "high",
+      "needs_human_confirmation": true
+    },
+    {
+      "id": "R2",
+      "marker": "② 蓝色",
+      "rule_id": "D2_RADIAL_TERMINAL_BOX",
+      "dimension": "D2",
+      "definition": "竖直电机轴线 → 接线盒最外端的水平（径向）距离",
+      "original_content": "原图接线盒相关标注含 297（注意：297 不是 D2）；D2 当前值待从原始 DWG 量取",
+      "target_content": "D2 = 294 mm",
+      "locate_basis": [
+        "参考图蓝色水平尺寸线 D2",
+        "知识卡 D2_RADIAL_TERMINAL_BOX.aliases（D2/接线盒伸出/左右伸出）",
+        "原 DWG 中接线盒图层/块参照"
+      ],
+      "action": "调整接线盒外盖左右方向的径向伸出量，外盖整体随动，内部固定件保持",
+      "invariants": ["外盖随动", "内部端子/固定件保持不动", "294 是水平径向距离"],
+      "forbidden": ["不得把盒子的上下高度改成294", "不得用原图297替换为294"],
+      "verification": "重开 DWG 后测电机轴线到接线盒最外端 = 294±0.5mm；检查内部件未动",
+      "risk": "high",
+      "needs_human_confirmation": true
+    },
+    {
+      "id": "R3",
+      "marker": "③ 橙色",
+      "rule_id": "SHAFT_EXT_PLUS20",
+      "dimension": "轴伸",
+      "definition": "新轴伸 = 江潮标准轴伸 E + 20mm，沿电机轴线向泵侧伸出",
+      "original_content": "原图轴伸标注为 E（江潮标准轴伸，需电机图确认）",
+      "target_content": "轴伸 = E + 20 mm（完整显示轴端，键槽保留）",
+      "locate_basis": [
+        "参考图橙色引出标注'轴端+20'",
+        "知识卡 SHAFT_EXT_PLUS20.aliases（轴伸/E+20/江潮标准轴伸）",
+        "原 DWG 中轴图层/轴端实体"
+      ],
+      "action": "轴端沿电机轴线向泵侧伸出 20mm；图上清楚显示完整轴端",
+      "invariants": ["键槽按要求保留", "轴端完整显示"],
+      "forbidden": ["不得把20加到风罩H2", "不得把虚线框内的支撑/法兰拉长20"],
+      "verification": "重开 DWG 后测轴伸 = E+20；检查键槽保留、H2 未受影响、法兰长度未变",
+      "risk": "high",
+      "needs_human_confirmation": true
+    }
+  ]
+}

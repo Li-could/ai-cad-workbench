@@ -1,0 +1,136 @@
+{
+  "$schema": "./change_card.schema.json",
+  "version": "1.0.0",
+  "description": "TD50-40G 立式管道泵变更知识卡。每张卡定义一条'带约束的尺寸变更规则'，供大模型检索并生成变更计划。",
+  "drawing": {
+    "model": "TD50-40G",
+    "type": "立式管道离心泵安装图",
+    "source_file": "TD50-40G.dwg",
+    "dwg_version": "AC1032 (AutoCAD 2018)",
+    "note": "彩色标注只标识目标范围与角色；原黑色几何、原尺寸数字均保留，未伪造改后轮廓。"
+  },
+  "cards": [
+    {
+      "rule_id": "H2_AXIAL_HEIGHT",
+      "enabled": true,
+      "priority": 1,
+      "color_marker": "红色",
+      "aliases": ["H2", "红色", "风罩总高", "风罩高度", "安装面到风罩顶", "罩壳轴向总高", "H2目标443"],
+      "measure": {
+        "datum_from": "安装法兰贴合面",
+        "datum_to": "风罩最高点",
+        "definition": "安装法兰贴合面 → 风罩最高点的轴向总高",
+        "plain": "从泵安装法兰的贴合面，一直量到电机风罩的最高点"
+      },
+      "direction": { "axis": "Z", "kind": "axial", "label": "轴向（上下）" },
+      "target": { "value": 443, "unit": "mm", "operator": "eq", "tolerance_mm": 0.5 },
+      "delta": {
+        "formula": "443 - H2_measured_from_original_CAD",
+        "source_of_truth": "original_CAD:H2_measured",
+        "disallow_pixel_estimate": true,
+        "note": "移动量不能由截图确定，必须从原始CAD量取当前H2"
+      },
+      "action": {
+        "op": "deform",
+        "object": "罩壳本体",
+        "detail": "两侧壁变形，完整罩壳一起移动（轴向拉伸/平移）",
+        "geometry_hint": "选择罩壳对应图层/块的侧壁顶点，沿Z轴按delta移动；安装面以下几何锁定"
+      },
+      "invariants": [
+        { "object": "绿色罩形", "requirement": "保持不动" },
+        { "object": "安装面", "requirement": "保持不动" },
+        { "object": "机身", "requirement": "保持不动" }
+      ],
+      "forbidden": [
+        { "rule": "不得把风罩自身长度改成443", "reason": "443是总高，不是风罩自身长度" },
+        { "rule": "不得从截图目测移动量", "reason": "像素距离无工程意义，真值只能来自原始CAD" }
+      ],
+      "dependencies": [],
+      "evidence": { "source": "TD50-40G 标注图 / 红色框 ①", "confirmed_by": "", "version": "1.0" }
+    },
+    {
+      "rule_id": "D2_RADIAL_TERMINAL_BOX",
+      "enabled": true,
+      "priority": 2,
+      "color_marker": "蓝色",
+      "aliases": ["D2", "蓝色", "接线盒伸出", "接线盒最外端", "径向伸出", "左右伸出", "D2目标294", "电机轴线到接线盒"],
+      "measure": {
+        "datum_from": "竖直电机轴线",
+        "datum_to": "接线盒最外端",
+        "definition": "竖直电机轴线 → 接线盒最外端的水平（径向）距离",
+        "plain": "从电机中心轴线，水平量到接线盒最外侧那一端"
+      },
+      "direction": { "axis": "X", "kind": "radial", "label": "径向（左右）" },
+      "target": { "value": 294, "unit": "mm", "operator": "eq", "tolerance_mm": 0.5 },
+      "delta": {
+        "formula": "294 - (接线盒最外端到电机轴线的实际水平距离)",
+        "source_of_truth": "original_CAD:D2_measured",
+        "disallow_pixel_estimate": true,
+        "note": "原图上的297不是D2，不能拿297直接替换成294"
+      },
+      "action": {
+        "op": "move",
+        "object": "接线盒外盖（含其内全部子实体）",
+        "detail": "调整左右方向的径向伸出量，外盖整体随动，固定内部件保持",
+        "geometry_hint": "选择接线盒外盖块参照整体沿X轴平移delta；内部端子/固定件排除在变换集之外"
+      },
+      "invariants": [
+        { "object": "固定内部件", "requirement": "保持不动" },
+        { "object": "接线盒上下高度", "requirement": "不得修改（变更是径向而非轴向）" }
+      ],
+      "forbidden": [
+        { "rule": "不得把盒子的上下高度改成294", "reason": "294是水平径向距离，不是盒子高度" },
+        { "rule": "不得用原图297替换为294", "reason": "原图297不是D2，二者不是同一尺寸" }
+      ],
+      "dependencies": [],
+      "evidence": { "source": "TD50-40G 标注图 / 蓝色框 ②", "confirmed_by": "", "version": "1.0" }
+    },
+    {
+      "rule_id": "SHAFT_EXT_PLUS20",
+      "enabled": true,
+      "priority": 3,
+      "color_marker": "橙色",
+      "aliases": ["轴端", "轴伸", "轴端+20", "橙色", "加20", "轴伸加20", "E+20", "江潮标准轴伸"],
+      "measure": {
+        "datum_from": "轴正端面（电机图确认）",
+        "datum_to": "轴伸出端端面",
+        "definition": "新轴伸 = 江潮标准轴伸 E + 20mm，沿电机轴线向泵侧伸出",
+        "plain": "在江潮标准轴伸E的基础上，沿电机轴往泵的方向再多伸出20毫米"
+      },
+      "direction": { "axis": "Z", "kind": "axial", "label": "沿电机轴向泵侧" },
+      "target": { "value": "E + 20", "unit": "mm", "operator": "formula", "base": "江潮标准轴伸E", "add": 20, "tolerance_mm": 0.5 },
+      "delta": {
+        "formula": "+20",
+        "source_of_truth": "电机图:江潮标准轴伸E；需在电机图确认轴伸和轴正端面",
+        "disallow_pixel_estimate": true,
+        "note": "本图未清楚显示完整轴端，需独立电机图确认轴肩和真正端面"
+      },
+      "action": {
+        "op": "extend",
+        "object": "轴段（轴端）",
+        "detail": "轴端沿电机轴线向泵侧伸出20mm，图上清楚显示完整轴端",
+        "geometry_hint": "沿电机轴线延长轴段实体20mm；键槽几何保留；支撑/法兰实体加入排除集"
+      },
+      "invariants": [
+        { "object": "键槽", "requirement": "按要求保持" },
+        { "object": "虚线框内支撑/法兰", "requirement": "不得拉长20" },
+        { "object": "风罩H2", "requirement": "不得把+20串联到H2（不得加到风罩高度）" }
+      ],
+      "forbidden": [
+        { "rule": "不得把20加到风罩H2", "reason": "轴伸变更与风罩高度是不同尺寸链" },
+        { "rule": "不得把虚线框内的支撑/法兰拉长20", "reason": "虚线框仅示意连接区域，非轴伸定位" }
+      ],
+      "dependencies": [
+        { "needs": "电机图", "why": "确认江潮标准轴伸E、轴伸与轴正端面" }
+      ],
+      "evidence": { "source": "TD50-40G 标注图 / 橙色框 ③ + 独立电机图", "confirmed_by": "", "version": "1.0" }
+    }
+  ],
+  "global_rules": [
+    { "id": "G1", "rule": "所有改变量必须来自原始CAD真值，禁止用图片像素估算" },
+    { "id": "G2", "rule": "改的是几何，不是图上标注数字；禁止直接替换数字了事" },
+    { "id": "G3", "rule": "每条变更必须同时执行invariants检查，违反则回滚" },
+    { "id": "G4", "rule": "不同变更之间不得发生尺寸链污染（如轴伸+20串到H2）" },
+    { "id": "G5", "rule": "需求信息不足时主动追问，不得臆测" }
+  ]
+}

@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AI CAD 智能修改工作台</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--line:#dde3ec;--tx:#1e293b;--sub:#64748b;--pri:#1d4ed8;--ok:#047857;--err:#b91c1c;--warn:#b45309}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px}
+header{background:#0f172a;color:#e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px}
+header .tag{background:#1e3a8a;padding:2px 10px;border-radius:10px;font-size:12px}
+header .demo{margin-left:auto;background:#ea6c0c;border:none;color:#fff;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+main{max-width:1280px;margin:16px auto;padding:0 16px;display:grid;grid-template-columns:380px 1fr;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.card h2{font-size:14px;color:var(--pri);margin-bottom:10px;border-left:3px solid var(--pri);padding-left:8px}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:18px;text-align:center;color:var(--sub);cursor:pointer;transition:.2s}
+.drop:hover{border-color:var(--pri);color:var(--pri)}
+.drop.ok{border-color:var(--ok);color:var(--ok)}
+.drop.optional{background:#f8fafc;border-width:1px;padding:12px;color:#475569}
+.drop.optional:hover{border-color:#94a3b8;color:#334155}
+.drop .opt{display:inline-block;background:#e2e8f0;color:#475569;border-radius:9px;padding:1px 8px;font-size:11px;margin-right:6px;font-weight:600}
+textarea{width:100%;min-height:76px;border:1px solid var(--line);border-radius:6px;padding:8px;font-family:inherit;font-size:13px;resize:vertical}
+button.act{background:var(--pri);border:none;color:#fff;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:13px}
+button.act:disabled{background:#94a3b8;cursor:not-allowed}
+button.ghost{background:#fff;border:1px solid var(--line);color:var(--tx);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin:4px 4px 0 0}
+.status{display:none;padding:9px 12px;border-radius:6px;font-size:13px;margin-top:10px}
+.status.show{display:block}
+.status.ok{background:#ecfdf5;color:var(--ok)}
+.status.err{background:#fef2f2;color:var(--err)}
+.status.warn{background:#fffbeb;color:var(--warn)}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:4px 10px;font-size:12.5px}
+.kv b{color:var(--sub);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+th{background:#f1f5f9}
+.planbox{background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12.5px;max-height:220px;overflow:auto;white-space:pre-wrap}
+.imgs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.imgs figure{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.imgs img{width:100%;display:block}
+.imgs figcaption{font-size:12px;color:var(--sub);padding:6px 10px}
+.imgs img.zoomable{cursor:zoom-in;transition:filter .15s}
+.imgs img.zoomable:hover{filter:brightness(.98) contrast(1.02)}
+.zoomtag{display:inline-block;background:#eef2ff;color:#1d4ed8;border-radius:9px;padding:0 7px;margin-left:6px;font-size:10.5px}
+.logbox{background:#0f172a;color:#a5f3a5;font-family:Consolas,monospace;font-size:11.5px;border-radius:6px;padding:10px;max-height:180px;overflow:auto}
+.versions li{font-size:12.5px;margin:4px 0;list-style:none}
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+.intentbox{background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;padding:10px;margin-top:8px;font-size:12.5px;line-height:1.7}
+.intentbox .chip{display:inline-block;background:#fff;border:1px solid #c7d2fe;border-radius:5px;padding:1px 8px;margin:2px 4px 2px 0;font-weight:600;color:var(--pri)}
+.intentbox .ask{color:var(--warn)}
+.intentbox .src{color:var(--sub);font-size:11.5px}
+.intentbox .scan-item{text-align:left;line-height:1.5;transition:.15s}
+.intentbox .scan-item:hover{border-color:#94a3b8;background:#f8fafc}
+.intentbox .scan-item.picked{outline:2px solid #0f766e;background:#ecfdf5;border-color:#0f766e;box-shadow:0 0 0 2px #ccfbf1}
+.intentbox .scan-item .scan-tick{display:inline-block;min-width:18px;color:#0f766e;font-weight:700}
+.batchbox{margin-top:9px;padding-top:9px;border-top:1px dashed #c7d2fe}
+.batchhead{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.batchhead b{color:#0f766e}
+.batchrows{max-height:250px;overflow:auto;margin-top:6px}
+.batchrow{display:grid;grid-template-columns:1fr 122px;gap:7px;align-items:center;padding:4px 0;border-bottom:1px solid #e0e7ff}
+.batchrow .meta{font-size:11.5px;line-height:1.45;overflow-wrap:anywhere}
+.batchrow .meta b{color:var(--tx)}
+.batchrow input{width:100%;border:1px solid #cbd5e1;border-radius:5px;padding:5px 7px;font-size:12px}
+.batchfillrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:7px}
+.batchfillrow input{flex:1;min-width:120px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:12.5px}
+.batchfillrow .ghost{margin:0}
+.locatebadge{display:inline-block;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:999px;padding:1px 8px;font-size:11px;margin-left:6px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:99;padding:20px}
+.modal.show{display:flex}
+.modal .sheet{background:#fff;border-radius:12px;max-width:900px;width:100%;max-height:86vh;overflow:auto;padding:20px 24px}
+.modal .sheet h2{font-size:17px;margin-bottom:6px}
+.modal .sheet pre{white-space:pre-wrap;font-size:12.5px;line-height:1.7;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:10px}
+.modal .close{float:right;background:#e2e8f0;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:13px}
+.viewer{z-index:120}
+.viewer .viewerSheet{max-width:96vw;width:96vw;height:92vh;max-height:92vh;padding:14px 16px;display:flex;flex-direction:column;overflow:hidden}
+.viewerHead{display:flex;align-items:flex-start;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.viewerHead h2{font-size:16px;margin:0 0 3px}
+.viewerTools{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.viewerTools button{background:#fff;border:1px solid #cbd5e1;border-radius:6px;min-width:34px;height:32px;padding:0 10px;cursor:pointer;font-size:13px;color:#1e293b}
+.viewerTools button:hover{border-color:#1d4ed8;color:#1d4ed8}
+.viewerZoomPct{min-width:54px;text-align:center;font:600 12px Consolas,monospace;color:#334155}
+.viewerStage{position:relative;flex:1;min-height:0;margin-top:10px;border:1px solid #cbd5e1;border-radius:9px;background:linear-gradient(45deg,#f8fafc 25%,transparent 25%),linear-gradient(-45deg,#f8fafc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f8fafc 75%),linear-gradient(-45deg,transparent 75%,#f8fafc 75%),#eef2f7;background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0;overflow:hidden;touch-action:none;cursor:grab}
+.viewerStage.dragging{cursor:grabbing}
+.viewerCanvas{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#viewerImg{flex:0 0 auto;width:auto;height:auto;max-width:none;max-height:none;user-select:none;transform-origin:center center;will-change:transform;image-rendering:auto}
+#viewerSvgHost{display:none;flex:0 0 auto;transform-origin:center center;will-change:transform}
+#viewerSvgHost svg{display:block;width:100%;height:100%;max-width:none;max-height:none}
+.viewerFoot{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-top:8px;font-size:11.5px;color:var(--sub);flex-wrap:wrap}
+.viewerFoot a{color:var(--pri);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>AI CAD 智能修改工作台</h1>
+  <span class="tag" id="verTag">v—</span>
+  <span class="tag">适配 CAXA / SolidWorks</span>
+  <span class="tag">交付 DWG + DXF</span>
+  <a class="demo" href="/learning" style="background:#7c3aed;margin-right:8px;text-decoration:none">🧪 自改进 Loop</a>
+  <button class="demo" style="background:#334155;margin-right:8px" onclick="showSkill()">📖 封装规则</button>
+  <button class="demo" style="background:#7c3aed;margin-right:8px" onclick="runDemo25()">▶ 示例：25QYL 标注1:1+修复</button>
+  <button class="demo" style="background:#0f766e;margin-right:8px" onclick="runDemoRealMm()">▶ 示例：25QYL 真实毫米610</button>
+  <button class="demo" onclick="runDemo()">▶ 示例：TD50 一句话改图（无参考图）</button>
+</header>
+<main>
+<!-- ================= 左列 ================= -->
+<div>
+  <div class="card">
+    <h2>① 文件上传</h2>
+    <div class="drop" id="dropDwg" onclick="$('dwgFile').click()"><span class="drop-title">点击上传原始 DWG / DXF 图纸</span><div class="hint">必传；原文件只读保存，计算 SHA-256</div></div>
+    <input type="file" id="dwgFile" accept=".dwg,.dxf" hidden onchange="onFile(this,'dwg')">
+    <div class="drop optional" id="dropRef" style="margin-top:8px" onclick="$('refFile').click()">
+      <span class="drop-title"><span class="opt">可选</span>上传参考图（PNG/JPG）</span>
+      <div class="hint">没有参考图也能按一句话改图；尺寸以文字要求和原图实测为准</div>
+    </div>
+    <input type="file" id="refFile" accept=".png,.jpg,.jpeg" hidden onchange="onFile(this,'ref')">
+    <div id="fileInfo" class="hint"></div>
+    <div id="scanBox" class="intentbox" style="display:none"></div>
+  </div>
+  <div class="card">
+    <h2>② 修改要求（一句话）</h2>
+    <textarea id="instruction" oninput="clearIntent()" placeholder="例如：把材料 Q235 改成 304；或风罩高度443、轴伸加20">把材料 Q235 改成 304</textarea>
+    <div class="hint">请写清对象和值。尺寸数字默认不会只改标签：只改显示请说“只改标注文字”；要连图形一起改，请走真实毫米/几何链。已定标型号也支持风罩高度、接线盒伸出、轴伸加长。</div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="ghost" style="flex:1;margin:0" onclick="previewIntent()">🧠 AI 听懂了吗？</button>
+      <button class="act" style="flex:1.4" onclick="createTask()">解析并生成修改计划</button>
+    </div>
+    <div id="intentBox" class="intentbox" style="display:none"></div>
+    <div id="createSt" class="status"></div>
+  </div>
+  <div class="card">
+    <h2>③ 修改计划（需确认）</h2>
+    <div id="planBox" class="planbox">尚未生成计划</div>
+    <button class="ghost" id="approveBtn" style="display:none" onclick="approve()">✔ 确认计划并批准执行</button>
+  </div>
+  <div class="card">
+    <h2>⑤ 执行状态</h2>
+    <div class="logbox" id="logBox">等待任务…</div>
+  </div>
+</div>
+<!-- ================= 右列 ================= -->
+<div>
+  <div class="card">
+    <h2>④ 图纸信息与解析</h2>
+    <div id="parseInfo" class="kv"><b>状态</b><span>无任务</span></div>
+  </div>
+  <div class="card" id="locateCard" style="display:none">
+    <h2>选中项定位 <span class="locatebadge" id="locateCount">0 项</span></h2>
+    <div class="hint" id="locateSummary">正在定位选中文字与标注…</div>
+    <div class="imgs" style="margin-top:9px">
+      <figure>
+        <a id="locateFullLink" href="#" onclick="openLocatePreview('full');return false"><img id="locateFull" class="zoomable" alt="全图高亮" title="点击放大查看细节"></a>
+        <figcaption>全图定位：红框为当前选中项 <span class="zoomtag">点击放大 · 矢量</span></figcaption>
+      </figure>
+      <figure>
+        <a id="locateZoomLink" href="#" onclick="openLocatePreview('zoom');return false"><img id="locateZoom" class="zoomable" alt="局部放大高亮" title="点击放大查看细节"></a>
+        <figcaption>局部放大：按选中范围自动缩放 <span class="zoomtag">点击放大 · 矢量</span></figcaption>
+      </figure>
+    </div>
+    <div class="hint" id="locateWarn"></div>
+  </div>
+  <div class="card">
+    <h2>⑥ 结果交付</h2>
+    <div id="deliver">
+      <div class="hint">执行完成后在此下载成果（DWG / DXF / 对照图 / 质检报告）</div>
+    </div>
+    <div id="qaInfo"></div>
+  </div>
+  <div class="card">
+    <h2>修改前后对照</h2>
+    <div class="imgs">
+      <figure><img id="imgBefore" class="zoomable" alt="修改前" onclick="openTaskPreview('before')" title="点击放大查看矢量细节"><figcaption>修改前（原始图纸） <span class="zoomtag">点击放大 · 矢量</span></figcaption></figure>
+      <figure><img id="imgAfter" class="zoomable" alt="修改后" onclick="openTaskPreview('after')" title="点击放大查看矢量细节"><figcaption>修改后（全图，彩色为标注） <span class="zoomtag">点击放大 · 矢量</span></figcaption></figure>
+    </div>
+    <div class="imgs" style="margin-top:12px">
+      <figure style="flex:1"><img id="imgZoom" class="zoomable" alt="三处改动放大" style="width:100%" onclick="openTaskPreview('zoom')" title="点击放大查看矢量细节"><figcaption>三处改动放大（H2 / D2 / 轴伸 / 联动总高） <span class="zoomtag">点击放大 · 矢量</span></figcaption></figure>
+    </div>
+  </div>
+  <div class="card">
+    <h2>版本与回滚</h2>
+    <ul class="versions" id="verList"><li>暂无版本</li></ul>
+  </div>
+  <div class="card">
+    <h2>验收与自改进</h2>
+    <div class="hint">验收结论会进入自改进 loop：成功结果成为回归候选，返工说明进入失败归类。系统不会自动改代码或降低质检门槛。</div>
+    <textarea id="feedbackNote" style="margin-top:8px;min-height:54px" placeholder="可选：说明哪里还需要改，例如“右视图底边差 0.2mm”"></textarea>
+    <div>
+      <button class="ghost" style="border-color:#a7f3d0;color:#047857" onclick="sendFeedback('accepted')">✅ 验收通过</button>
+      <button class="ghost" style="border-color:#fde68a;color:#92400e" onclick="sendFeedback('needs_work')">⚠ 需要返工</button>
+      <button class="ghost" style="border-color:#fecaca;color:#991b1b" onclick="sendFeedback('rejected')">❌ 拒绝结果</button>
+    </div>
+    <div id="feedbackInfo" class="hint">尚未验收当前任务。</div>
+    <div id="feedbackSt" class="status"></div>
+  </div>
+</div>
+</main>
+<div class="modal" id="skillModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="sheet">
+    <button class="close" onclick="$('skillModal').classList.remove('show')">关闭</button>
+    <h2>封装进工作台的 Skill 知识</h2>
+    <div class="hint">这些规则已注入自然语言解析器与执行引擎，工作台会严格按此操作。也可作为独立 Skill 复用于其它会话。</div>
+    <pre id="skillBody">加载中…</pre>
+  </div>
+</div>
+<div class="modal viewer" id="previewModal" onclick="if(event.target===this)closeViewer()">
+  <div class="sheet viewerSheet">
+    <div class="viewerHead">
+      <div>
+        <h2 id="viewerTitle">图纸细节查看器</h2>
+        <div class="hint" id="viewerMeta">滚轮缩放，拖拽平移</div>
+      </div>
+      <div class="viewerTools">
+        <button type="button" title="缩小" onclick="viewerZoomBy(1/1.3)">−</button>
+        <span class="viewerZoomPct" id="viewerZoomPct">100%</span>
+        <button type="button" title="放大" onclick="viewerZoomBy(1.3)">+</button>
+        <button type="button" onclick="resetViewer()">适应窗口</button>
+        <button type="button" onclick="viewerActualScale()">实际比例</button>
+        <button type="button" onclick="closeViewer()">关闭</button>
+      </div>
+    </div>
+    <div class="viewerStage" id="viewerStage">
+      <div class="viewerCanvas">
+        <div id="viewerSvgHost" aria-hidden="true"></div>
+        <img id="viewerImg" alt="图纸细节" draggable="false">
+      </div>
+    </div>
+    <div class="viewerFoot">
+      <span>滚轮缩放 · 按住拖拽 · 双击放大/复位 · Esc 关闭　矢量 SVG 放大后线条与文字仍清晰</span>
+      <a id="viewerOpenLink" href="#" target="_blank" rel="noopener">新窗口打开原图</a>
+    </div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let files={},taskId=null,lastIntent=null;
+let currentTaskType=null,currentTaskStatus=null;
+let scanData=null,scanAllLoaded=false;
+const scanItems=new Map(),scanSelected=new Map(),scanValues=new Map();
+let locateTimer=null,locateSeq=0,scanBulkValue='';
+let locateUrls={};
+const crispSeq=new Map();
+const viewerState={zoom:1,x:0,y:0,drag:null,currentUrl:'',fallback:'',
+  baseMeta:'',baseW:0,baseH:0,naturalW:0,naturalH:0,mode:'img',seq:0};
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function setSt(id,msg,cls){const e=$(id);e.textContent=msg;e.className='status show '+cls;}
+async function loadHealth(){
+  try{
+    const h=await (await fetch('/api/health')).json();
+    if(h.version)$('verTag').textContent='v'+h.version;
+  }catch(error){}
+}
+function setCrispPreview(imgId,svgUrl,pngUrl){
+  const img=$(imgId);if(!img)return;
+  const seq=(crispSeq.get(imgId)||0)+1;
+  crispSeq.set(imgId,seq);
+  img.onerror=null;
+  img.dataset.format=pngUrl?'png':'';
+  if(pngUrl)img.src=pngUrl;else img.removeAttribute('src');
+  if(!svgUrl)return;
+  const probe=new Image();
+  probe.onload=()=>{
+    if(crispSeq.get(imgId)!==seq)return;
+    img.onerror=()=>{
+      img.onerror=null;img.dataset.format='png';
+      if(pngUrl)img.src=pngUrl;
+    };
+    img.dataset.format='svg';
+    img.src=svgUrl;
+  };
+  probe.src=svgUrl;
+}
+function viewerClamp(value,low,high){return Math.max(low,Math.min(high,value));}
+function viewerActiveEl(){
+  return viewerState.mode==='svg'?$('viewerSvgHost'):$('viewerImg');
+}
+function viewerSetSize(width,height,vector){
+  const stageRect=$('viewerStage').getBoundingClientRect();
+  const fit=Math.min(
+    (stageRect.width*0.94)/Math.max(width,1),
+    (stageRect.height*0.94)/Math.max(height,1));
+  viewerState.mode=vector?'svg':'img';
+  viewerState.naturalW=width;
+  viewerState.naturalH=height;
+  viewerState.baseW=Math.max(1,width*fit);
+  viewerState.baseH=Math.max(1,height*fit);
+  $('viewerSvgHost').style.display=vector?'block':'none';
+  $('viewerImg').style.display=vector?'none':'';
+  $('viewerSvgHost').setAttribute('aria-hidden',vector?'false':'true');
+  viewerRender();
+}
+function viewerRender(){
+  const stage=$('viewerStage'),img=$('viewerImg');
+  if(!stage||!img)return;
+  const el=viewerActiveEl();
+  if(viewerState.baseW>0&&viewerState.baseH>0){
+    el.style.width=(viewerState.baseW*viewerState.zoom)+'px';
+    el.style.height=(viewerState.baseH*viewerState.zoom)+'px';
+  }
+  el.style.transform='translate('+viewerState.x+'px,'+viewerState.y+'px)';
+  $('viewerZoomPct').textContent=Math.round(viewerState.zoom*100)+'%';
+  $('viewerMeta').textContent=viewerState.baseMeta+
+    (viewerState.zoom>1.02?' · 当前为高清放大状态，可继续查看细节':' · 滚轮缩放，拖拽平移');
+}
+function viewerResetTransform(){
+  viewerState.zoom=1;viewerState.x=0;viewerState.y=0;
+  viewerRender();
+}
+function resetViewer(){viewerResetTransform();}
+function viewerActualScale(){
+  const img=$('viewerImg');
+  viewerState.zoom=viewerClamp(
+    viewerState.baseW>0&&viewerState.naturalW>0?viewerState.naturalW/viewerState.baseW:1,0.5,20);
+  viewerState.x=0;viewerState.y=0;viewerRender();
+}
+function viewerZoomBy(factor,anchor){
+  const stage=$('viewerStage');
+  if(!stage)return;
+  const oldZoom=viewerState.zoom;
+  const newZoom=viewerClamp(oldZoom*factor,0.5,20);
+  if(Math.abs(newZoom-oldZoom)<1e-6)return;
+  let px=0,py=0;
+  if(anchor&&anchor.clientX!=null){
+    const rect=stage.getBoundingClientRect();
+    px=anchor.clientX-(rect.left+rect.width/2);
+    py=anchor.clientY-(rect.top+rect.height/2);
+  }
+  const ratio=newZoom/oldZoom;
+  viewerState.x=px-(px-viewerState.x)*ratio;
+  viewerState.y=py-(py-viewerState.y)*ratio;
+  viewerState.zoom=newZoom;
+  viewerRender();
+}
+function svgLengthPx(value){
+  const m=/^\s*([\d.]+)\s*(pt|px|mm|cm|in)?\s*$/i.exec(value||'');
+  if(!m)return 0;
+  const n=Number(m[1]);
+  const unit=(m[2]||'px').toLowerCase();
+  return n*({pt:96/72,px:1,mm:96/25.4,cm:96/2.54,in:96}[unit]||1);
+}
+function sanitizeSvg(svg){
+  svg.querySelectorAll('script,foreignObject,iframe').forEach(el=>el.remove());
+  svg.querySelectorAll('*').forEach(el=>{
+    for(const attr of [...el.attributes]){
+      if(/^on/i.test(attr.name)||/^\s*javascript:/i.test(attr.value)){
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  return svg;
+}
+async function openViewer(primary,title,fallback){
+  if(!primary){setSt('createSt','当前没有可打开的预览图','err');return;}
+  const modal=$('previewModal'),img=$('viewerImg');
+  const seq=++viewerState.seq;
+  viewerState.currentUrl=primary;
+  viewerState.fallback=fallback||'';
+  viewerState.baseMeta='正在加载高清预览…';
+  viewerState.zoom=1;viewerState.x=0;viewerState.y=0;
+  viewerState.baseW=0;viewerState.baseH=0;
+  viewerState.naturalW=0;viewerState.naturalH=0;
+  viewerState.mode='img';
+  $('viewerTitle').textContent=title||'图纸细节查看器';
+  $('viewerMeta').textContent=viewerState.baseMeta;
+  $('viewerZoomPct').textContent='100%';
+  $('viewerOpenLink').href=primary;
+  $('viewerSvgHost').style.display='none';
+  $('viewerSvgHost').replaceChildren();
+  img.style.display='';
+  img.style.visibility='hidden';
+  img.onload=()=>{
+    if(seq!==viewerState.seq||viewerState.mode==='svg')return;
+    const width=img.naturalWidth||Math.round(img.getBoundingClientRect().width);
+    const height=img.naturalHeight||Math.round(img.getBoundingClientRect().height);
+    viewerState.baseMeta='高清位图 PNG · 原始画布 '+width+'×'+height+' px';
+    img.style.visibility='visible';
+    viewerSetSize(width,height,false);
+  };
+  img.onerror=()=>{
+    if(seq!==viewerState.seq)return;
+    if(viewerState.baseMeta.indexOf('矢量 SVG')===0)return;
+    viewerState.baseMeta='预览加载失败，请回到工作台重新执行后再试';
+    viewerRender();
+  };
+  modal.classList.add('show');
+  const vectorUrl=/\.svg(?:\?|$)/i.test(primary);
+  if(!vectorUrl){
+    img.src=primary;
+    return;
+  }
+  if(fallback&&fallback!==primary)img.src=fallback;
+  try{
+    const response=await fetch(primary,{cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    const text=await response.text();
+    if(seq!==viewerState.seq)return;
+    const parsed=new DOMParser().parseFromString(text,'image/svg+xml');
+    const svg=sanitizeSvg(parsed.documentElement);
+    if(!svg||svg.nodeName.toLowerCase()!=='svg')throw new Error('不是有效 SVG');
+    const viewBox=(svg.getAttribute('viewBox')||'').trim().split(/[\s,]+/).map(Number);
+    const vbW=viewBox.length===4&&isFinite(viewBox[2])?Math.abs(viewBox[2]):0;
+    const vbH=viewBox.length===4&&isFinite(viewBox[3])?Math.abs(viewBox[3]):0;
+    const width=svgLengthPx(svg.getAttribute('width'))||vbW||1400;
+    const height=svgLengthPx(svg.getAttribute('height'))||vbH||900;
+    const host=$('viewerSvgHost');
+    host.replaceChildren(document.importNode(svg,true));
+    img.onerror=null;
+    img.style.visibility='hidden';
+    viewerState.baseMeta='矢量 SVG · 原始画布 '+Math.round(width)+'×'+Math.round(height)+' px';
+    viewerSetSize(width,height,true);
+  }catch(error){
+    if(seq!==viewerState.seq)return;
+    if(fallback&&fallback!==primary){
+      img.src=fallback;
+      viewerState.baseMeta='矢量预览不可用，已回退高清位图 PNG';
+    }else{
+      viewerState.baseMeta='矢量预览加载失败';
+      viewerRender();
+    }
+  }
+}
+function closeViewer(){$('previewModal').classList.remove('show');}
+function openTaskPreview(which){
+  if(!taskId){setSt('createSt','请先生成并查看任务结果','err');return;}
+  const label={before:'修改前',after:'修改后',zoom:'改动局部'}[which]||'图纸结果';
+  const png='/api/tasks/'+taskId+'/download?kind='+which+'.png';
+  const svg='/api/tasks/'+taskId+'/download?kind='+which+'.svg';
+  openViewer(svg,label+' · 矢量细节',png);
+}
+function openLocatePreview(which){
+  const primary=locateUrls[which+'_svg']||locateUrls[which+'_png']||'';
+  const fallback=locateUrls[which+'_png']||primary;
+  openViewer(primary,which==='zoom'?'选中项局部 · 矢量细节':'选中项全图 · 矢量细节',fallback);
+}
+(() => {
+  const stage=$('viewerStage');
+  if(!stage)return;
+  stage.addEventListener('wheel',e=>{
+    if(!$('previewModal').classList.contains('show'))return;
+    e.preventDefault();
+    viewerZoomBy(e.deltaY<0?1.18:1/1.18,e);
+  },{passive:false});
+  stage.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    viewerState.drag={x:e.clientX,y:e.clientY};
+    stage.classList.add('dragging');
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!viewerState.drag)return;
+    viewerState.x+=e.clientX-viewerState.drag.x;
+    viewerState.y+=e.clientY-viewerState.drag.y;
+    viewerState.drag={x:e.clientX,y:e.clientY};
+    viewerRender();
+  });
+  const endDrag=e=>{
+    viewerState.drag=null;stage.classList.remove('dragging');
+    if(e&&e.pointerId!=null&&stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId);
+  };
+  stage.addEventListener('pointerup',endDrag);
+  stage.addEventListener('pointercancel',endDrag);
+  stage.addEventListener('dblclick',e=>{
+    e.preventDefault();
+    if(viewerState.zoom>1.05)viewerResetTransform();
+    else viewerZoomBy(2.8,e);
+  });
+  document.addEventListener('keydown',e=>{
+    if(!$('previewModal').classList.contains('show'))return;
+    if(e.key==='Escape')closeViewer();
+    else if(e.key==='+'||e.key==='=')viewerZoomBy(1.25);
+    else if(e.key==='-')viewerZoomBy(1/1.25);
+    else if(e.key==='0')viewerResetTransform();
+  });
+})();
+function clearIntent(){const b=$('intentBox');if(b)b.style.display='none';lastIntent=null;}
+async function previewIntent(){
+  const ins=$('instruction').value.trim();
+  if(!ins){setSt('createSt','请先填写修改要求','err');return;}
+  const box=$('intentBox');box.style.display='block';box.innerHTML='<span class="src">AI 正在理解…</span>';
+  const body={instruction:ins};
+  if(files.dwg&&files.dwg.file_id)body.file_id=files.dwg.file_id;
+  const r=await (await fetch('/api/parse-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  if(!r.ok){box.innerHTML='<span class="ask">解析失败：'+(r.detail||'')+'</span>';return;}
+  if(r.drawing_scan&&$('scanBox').dataset.expanded!=='1')renderScan(r.drawing_scan);
+  lastIntent=r.intent;renderIntent(r.intent);
+}
+function renderIntent(it){
+  const box=$('intentBox');
+  let chips='',asks=(it.questions||[]).map(q=>'<div class="ask">? '+q+'</div>').join('');
+  if(it.task_type==='real_mm'){
+    if(it.length_value!=null)chips+='<span class="chip">真实总长：'+it.length_value+' mm</span>';
+    if(it.height_value!=null)chips+='<span class="chip">真实总高：'+it.height_value+' mm</span>';
+    else chips+='<span class="chip">总高：按原图基准</span>';
+    chips+='<span class="chip">两视图高度对齐</span><span class="chip">标注=实测</span>';
+    box.innerHTML='<div>'+chips+'</div><div style="margin-top:5px">'+(it.summary||'')+'</div>'+
+      asks+'<div class="src">真实毫米链 · 来源：规则解析　置信度：'+it.confidence+'</div>';
+    return;
+  }
+  if(it.task_type==='annotation'){
+    const modeName={ '1to1':'严格1:1（标注=实测）','1to4':'1:4标准比例','base':'以指定值定标','cm':'换算成cm' };
+    if(it.mode)chips+='<span class="chip">换算：'+(modeName[it.mode]||it.mode)+'</span>';
+    if(it.base_value!=null)chips+='<span class="chip">基准值：'+it.base_value+' mm</span>';
+    if(it.fix_vertical)chips+='<span class="chip">修复竖排标注重叠</span>';
+    if(!it.mode&&!it.fix_vertical)chips='<span class="ask">未识别到明确修改</span>';
+    box.innerHTML='<div>'+chips+'</div><div style="margin-top:5px">'+ (it.summary||'') +'</div>'+
+      asks+'<div class="src">标注换算链 · 来源：'+(it.source==='annotation_rule'?'规则解析':it.source)+'　置信度：'+it.confidence+'</div>';
+    return;
+  }
+  if(it.task_type==='text_edit'){
+    (it.edits||[]).forEach(e=>{
+      chips+='<span class="chip">'+esc(e.text_before||e.old)+' → '+esc(e.expected_text||e.new)+
+        (e.dimension_effect==='label_only'?' · 仅标注显示':'')+'</span>';
+    });
+    (it.blocked||[]).forEach(b=>{
+      const c=b.candidate||{};
+      chips+='<span class="ask">'+esc(c.text||b.old)+' · '+esc(b.reason)+'</span>';
+    });
+    (it.ambiguous||[]).forEach(a=>{
+      chips+='<span class="ask">「'+esc(a.old)+'」有 '+a.candidates.length+' 个候选</span>';
+      a.candidates.slice(0,8).forEach(c=>{
+        const tail=(c.is_dimension?'，只改标注文字':'')+(c.shared?'，全部修改':'');
+        const pick='把句柄'+c.handle+'的“'+c.text+'”改成“'+a.new+'”'+tail;
+        chips+='<button class="ghost" data-pick="'+esc(pick)+'">'+esc(c.kind)+' '+esc(c.text)+' · 句柄 '+esc(c.handle)+' → 锁定</button>';
+      });
+    });
+    if(!(it.edits||[]).length&&!(it.ambiguous||[]).length&&!(it.blocked||[]).length)chips='<span class="ask">未找到明确可改项</span>';
+    box.innerHTML='<div>'+chips+'</div><div style="margin-top:5px">'+esc(it.summary||'')+'</div>'+
+      asks+'<div class="src">文字/标注修改链 · 来源：图纸内容匹配　置信度：'+it.confidence+'</div>';
+    box.querySelectorAll('[data-pick]').forEach(btn=>{
+      btn.onclick=()=>{
+        const input=$('instruction');
+        input.value=btn.dataset.pick||'';
+        input.focus();
+        input.setSelectionRange(input.value.length,input.value.length);
+        clearIntent();
+        setSt('createSt','已填入句柄定位指令，可直接生成计划','ok');
+      };
+    });
+    return;
+  }
+  const name={H2:'风罩总高 H2',D2:'接线盒伸出 D2',shaft:'轴伸加长'};
+  (it.enabled||[]).forEach(k=>{const v=it.targets[k];chips+='<span class="chip">'+name[k]+(v!=null?' = '+v+' mm':' = 默认')+'</span>';});
+  if(!(it.enabled||[]).length)chips='<span class="ask">未识别到明确修改</span>';
+  box.innerHTML='<div>'+chips+'</div><div style="margin-top:5px">'+ (it.summary||'') +'</div>'+
+    asks+'<div class="src">几何变形链 · 来源：'+(it.source==='llm'?'大模型解析':it.source)+'　置信度：'+it.confidence+'</div>';
+}
+async function showSkill(){
+  $('skillModal').classList.add('show');
+  if($('skillBody').dataset.loaded)return;
+  const r=await (await fetch('/api/skill')).json();
+  const rs=r.rules||{};
+  const lines=['【图纸】'+(rs.drawing?rs.drawing.model+' · '+rs.drawing.deliverable:''),'',
+    '【定标（踩坑要点）】'];
+  const cal=rs.calibration||{};
+  Object.values(cal).forEach(c=>{if(c&&c.basis)lines.push('· '+c.basis+' → K='+c.value+(c.critical_warning?'　⚠ '+c.critical_warning:''));});
+  lines.push('','【三条规则】');
+  (rs.rules||[]).forEach(rule=>{
+    lines.push('· '+rule.key+'：'+rule.meaning+'　默认 '+rule.default_target_mm+rule.unit);
+    (rule.invariants||[]).forEach(iv=>lines.push('    不变量：'+(typeof iv==='string'?iv:iv.object+' '+iv.requirement)));
+    (rule.forbidden||[]).forEach(fb=>lines.push('    禁止：'+(typeof fb==='string'?fb:fb.rule)));
+    if(rule.critical_warning)lines.push('    ⚠ '+rule.critical_warning);
+  });
+  lines.push('','【交付铁律】');
+  (rs.global_invariants||[]).forEach(g=>lines.push('· '+g));
+  lines.push('','【质检门槛】');
+  ((rs.delivery||{}).qa_gates||[]).forEach(g=>lines.push('· '+g.name+'：'+g.pass));
+  // 第二条链：标注换算/修复
+  const ar=r.annotation_rules||{};
+  if(ar.name){
+    lines.push('','════════════════════════════════');
+    lines.push('【第二条链】'+ar.name+'　引擎：'+ar.engine);
+    lines.push('【说明】'+(ar.description||''));
+    lines.push('','【换算模式】');
+    (ar.modes||[]).forEach(m=>lines.push('· '+m.key+'：'+m.meaning+(m.K!=null?'　K='+m.K:'')+(m.K_formula?'　'+m.K_formula:'')));
+    lines.push('','【铁律】');
+    (ar.iron_rules||[]).forEach(g=>lines.push('· '+g));
+    if(ar.vertical_fix){
+      lines.push('','【竖向标注修复规范】');
+      lines.push('· 根因：'+ar.vertical_fix.root_cause);
+      lines.push('· 正解：'+(ar.vertical_fix.correct_fix||{}).rule);
+    }
+    lines.push('','【质检门槛】');
+    ((ar.delivery||{}).qa_gates||[]).forEach(g=>lines.push('· '+g.name+'：'+g.pass));
+  }
+  $('skillBody').textContent=lines.join('\n');
+  $('skillBody').dataset.loaded='1';
+}
+async function onFile(inp,kind){
+  if(!inp.files[0])return;
+  const fd=new FormData();fd.append('file',inp.files[0]);
+  setSt('createSt','上传中…','warn');
+  const r=await (await fetch('/api/files',{method:'POST',body:fd})).json();
+  if(r.ok){files[kind]=r.file;
+    if(kind==='dwg'){clearScanSelection(true);scanItems.clear();scanData=null;scanAllLoaded=false;}
+    const box=$(kind==='dwg'?'dropDwg':'dropRef');box.classList.add('ok');
+    const title=box.querySelector('.drop-title');if(title)title.textContent='已上传：'+r.file.name;
+    $('fileInfo').innerHTML='SHA-256: '+r.file.sha256.slice(0,20)+'…　大小: '+(r.file.size/1024).toFixed(0)+' KB';
+    setSt('createSt','文件已保存（只读）','ok');
+    if(kind==='dwg')inspectUpload(r.file.file_id);
+  }else setSt('createSt','上传失败：'+(r.detail||''),'err');
+}
+function scanKey(handle){return String(handle||'').trim().toUpperCase();}
+function hideLocateCard(){
+  locateSeq++;
+  clearTimeout(locateTimer);
+  locateUrls={};
+  const card=$('locateCard');if(card)card.style.display='none';
+}
+function clearScanSelection(hide=true){
+  scanSelected.clear();scanValues.clear();scanBulkValue='';
+  document.querySelectorAll('#scanBox .scan-item[data-scan-handle]').forEach(btn=>{
+    btn.classList.remove('picked');btn.setAttribute('aria-pressed','false');
+    const tick=btn.querySelector('.scan-tick');if(tick)tick.textContent='☐';
+  });
+  renderBatchPanel();
+  if(hide)hideLocateCard();
+}
+function scheduleLocate(){
+  if(!files.dwg||!files.dwg.file_id||!scanSelected.size)return;
+  clearTimeout(locateTimer);
+  locateTimer=setTimeout(()=>refreshLocate(),220);
+}
+async function refreshLocate(){
+  const fid=files.dwg&&files.dwg.file_id;
+  const chosen=[...scanSelected.values()];
+  if(!fid||!chosen.length){hideLocateCard();return;}
+  const seq=++locateSeq;
+  const card=$('locateCard');
+  card.style.display='block';card.style.opacity='.72';
+  $('locateCount').textContent=chosen.length+' 项';
+  $('locateSummary').textContent='正在计算世界坐标并生成高亮预览…';
+  $('locateWarn').textContent='';
+  locateUrls={};
+  $('locateFull').removeAttribute('src');$('locateZoom').removeAttribute('src');
+  try{
+    const handles=chosen.map(x=>x.handle).join(',');
+    const r=await (await fetch('/api/files/'+fid+'/locate?handles='+encodeURIComponent(handles))).json();
+    if(seq!==locateSeq)return;
+    if(!r.ok){$('locateSummary').textContent='定位失败';$('locateWarn').textContent=r.detail||'';return;}
+    if(!(r.items||[]).length){
+      $('locateSummary').textContent='选中项没有在当前布局中找到可见实例';
+      $('locateWarn').textContent=(r.warnings||[]).join('；');
+      return;
+    }
+    const instances=(r.items||[]).reduce((n,item)=>n+(item.instances||1),0);
+    $('locateCount').textContent=r.count+' 项';
+    $('locateSummary').textContent='已选中 '+r.count+' 项 · 图上可见实例 '+instances+
+      ' 处 · 红框编号与扫描项一一对应';
+    locateUrls={
+      full_png:r.full_url,full_svg:r.full_svg_url,
+      zoom_png:r.zoom_url,zoom_svg:r.zoom_svg_url
+    };
+    setCrispPreview('locateFull',r.full_svg_url,r.full_url);
+    setCrispPreview('locateZoom',r.zoom_svg_url,r.zoom_url);
+    $('locateFullLink').href=r.full_svg_url||r.full_url;
+    $('locateZoomLink').href=r.zoom_svg_url||r.zoom_url;
+    const warns=[...(r.missing||[]).length?['未找到句柄：'+r.missing.join('、')]:[],...(r.warnings||[])];
+    $('locateWarn').textContent=warns.join('；');
+  }catch(error){
+    if(seq===locateSeq){
+      $('locateSummary').textContent='定位失败';
+      $('locateWarn').textContent=error.message;
+    }
+  }finally{
+    if(seq===locateSeq)card.style.opacity='1';
+  }
+}
+function renderBatchPanel(){
+  const count=$('selCount');if(!count)return;
+  const rows=$('batchRows'),fill=$('batchFill'),build=$('batchBuild'),clear=$('clearSel');
+  count.textContent=String(scanSelected.size);
+  const selected=[...scanSelected.entries()];
+  if(clear)clear.disabled=!selected.length;
+  if(fill)fill.disabled=!selected.length;
+  if(build)build.disabled=!selected.length;
+  if(!selected.length){
+    rows.innerHTML='<div class="src">先点上方可改项，可多选；选中后输入新值。</div>';
+  }else{
+    rows.innerHTML=selected.map(([key,item])=>{
+      const value=scanValues.get(key)||'';
+      const meta=[
+        esc(item.kind||''),
+        '句柄 '+esc(item.handle),
+        item.tag?'字段 '+esc(item.tag):'',
+        item.is_dimension?'尺寸标注':'',
+        item.shared?'共享块×'+esc(item.insert_count||'?'):'',
+      ].filter(Boolean).join(' · ');
+      return '<div class="batchrow" data-batch-row="'+esc(key)+'">'+
+        '<div class="meta"><b>'+esc(item.text||'(空)')+'</b><br><span class="src">'+meta+'</span></div>'+
+        '<input class="batch-value" data-value-handle="'+esc(key)+'" value="'+esc(value)+'" '+
+        'placeholder="新值" aria-label="'+esc(item.handle)+' 的新值"></div>';
+    }).join('');
+    rows.querySelectorAll('[data-value-handle]').forEach(inp=>{
+      inp.oninput=()=>scanValues.set(inp.dataset.valueHandle,inp.value);
+    });
+  }
+  const bulk=$('batchValue');if(bulk)bulk.value=scanBulkValue;
+}
+function bindScanItemButtons(items){
+  const box=$('scanBox');
+  box.querySelectorAll('[data-scan-index]').forEach(btn=>{
+    btn.onclick=()=>{
+      const item=items[Number(btn.dataset.scanIndex)];
+      if(!item)return;
+      const key=scanKey(item.handle);
+      if(!key)return;
+      if(scanSelected.has(key)){
+        scanSelected.delete(key);
+      }else{
+        if(scanSelected.size>=100){
+          setSt('createSt','一次最多选择 100 项，请分批生成指令','err');
+          return;
+        }
+        scanSelected.set(key,item);
+        clearIntent();
+      }
+      const picked=scanSelected.has(key);
+      btn.classList.toggle('picked',picked);
+      btn.setAttribute('aria-pressed',picked?'true':'false');
+      const tick=btn.querySelector('.scan-tick');if(tick)tick.textContent=picked?'☑':'☐';
+      renderBatchPanel();
+      if(scanSelected.size)scheduleLocate();
+      else hideLocateCard();
+    };
+  });
+  const clear=$('clearSel');
+  if(clear)clear.onclick=()=>{
+    clearScanSelection(true);
+    setSt('createSt','已清空选中项','ok');
+  };
+  const fill=$('batchFill');
+  if(fill)fill.onclick=()=>{
+    const bulk=$('batchValue');
+    const value=(bulk.value||'').trim();
+    if(!value){setSt('createSt','请先输入要批量填入的新值','err');if(bulk)bulk.focus();return;}
+    scanBulkValue=bulk.value;
+    scanSelected.forEach((item,key)=>scanValues.set(key,value));
+    renderBatchPanel();
+    setSt('createSt','已把新值填入 '+scanSelected.size+' 个选中项','ok');
+  };
+  const build=$('batchBuild');
+  if(build)build.onclick=()=>{
+    const missing=[];
+    const parts=[];
+    scanSelected.forEach((item,key)=>{
+      const value=(scanValues.get(key)||'').trim();
+      if(!value){missing.push(item.handle);return;}
+      let ins='把句柄'+item.handle+'改成'+value;
+      if(item.is_dimension)ins+='，只改标注文字';
+      if(item.shared)ins+='，全部修改';
+      parts.push(ins);
+    });
+    if(missing.length){
+      setSt('createSt','还有 '+missing.length+' 项没填新值：'+missing.join('、'),'err');
+      const first=document.querySelector('[data-batch-row="'+esc(scanKey(missing[0]))+'"] input');
+      if(first)first.focus();
+      return;
+    }
+    if(!parts.length){setSt('createSt','请先选择至少一个可改项','err');return;}
+    const input=$('instruction');
+    input.value=parts.join('；');
+    input.focus();input.setSelectionRange(input.value.length,input.value.length);
+    clearIntent();
+    const dims=scanSelected.size?[...scanSelected.values()].filter(x=>x.is_dimension).length:0;
+    const shared=[...scanSelected.values()].filter(x=>x.shared).length;
+    setSt('createSt','已生成 '+parts.length+' 项批量指令'+
+      (dims?'（'+dims+' 项尺寸只改标注文字）':'')+
+      (shared?'（'+shared+' 项共享块全部实例修改）':''),'ok');
+  };
+  const bulk=$('batchValue');
+  if(bulk)bulk.oninput=()=>{scanBulkValue=bulk.value;};
+  if(bulk)bulk.onkeydown=e=>{
+    if(e.key==='Enter'&&!fill.disabled){e.preventDefault();fill.click();}
+  };
+}
+async function inspectUpload(fid,limit=12,opts={}){
+  const box=$('scanBox');
+  const expanding=Boolean(opts.expand);
+  box.style.display='block';
+  if(!expanding||!scanItems.size)box.innerHTML='<span class="src">正在扫描图纸里的文字与标注…</span>';
+  try{
+    const r=await (await fetch('/api/files/'+fid+'/inspect?limit='+limit)).json();
+    if(!r.ok){box.innerHTML='<span class="ask">图纸扫描失败：'+esc(r.detail||'')+'</span>';return;}
+    const incoming=r.inspection.items||r.inspection.sample||[];
+    if(expanding||incoming.length>=(r.inspection.editable_count||0))scanAllLoaded=true;
+    renderScan(r.inspection);
+  }catch(error){box.innerHTML='<span class="ask">图纸扫描失败：'+esc(error.message)+'</span>';}
+}
+function renderScan(scan){
+  const box=$('scanBox');if(!box||!scan)return;
+  scanData=scan;
+  box.style.display='block';
+  const incoming=scan.items||scan.sample||[];
+  incoming.forEach(item=>{
+    const key=scanKey(item.handle);
+    if(key)scanItems.set(key,item);
+  });
+  if(!scanAllLoaded&&scan.editable_count&&scanItems.size>=scan.editable_count)scanAllLoaded=true;
+  const items=[...scanItems.values()];
+  const kinds=scan.kinds||{};
+  let html='<div><b>图纸可改内容</b>　共 '+esc(scan.editable_count||0)+' 处　'+
+    Object.entries(kinds).map(([k,v])=>esc(k)+' '+esc(v)).join('　')+'</div>';
+  if(scan.dimension_count||scan.shared_text_count){
+    html+='<div class="src" style="margin-top:4px">'+
+      (scan.dimension_count?'尺寸标注 '+esc(scan.dimension_count)+' 处（改数字需说明只改标注或连图形改）　':'')+
+      (scan.shared_text_count?'共享块文字 '+esc(scan.shared_text_count)+' 处（需明确全部修改）':'')+'</div>';
+  }
+  if(items.length){
+    html+='<div style="margin-top:5px">可改项（可多选，再逐项填新值）：<br>'+
+      items.map((x,i)=>{
+        const key=scanKey(x.handle);
+        const picked=scanSelected.has(key);
+        return '<button class="ghost scan-item '+(picked?'picked':'')+'" data-scan-index="'+i+'" '+
+          'data-scan-handle="'+esc(key)+'" aria-pressed="'+(picked?'true':'false')+'">'+
+          '<span class="scan-tick">'+(picked?'☑':'☐')+'</span>'+
+          esc(x.text||'(空)')+' · '+esc(x.kind)+' '+esc(x.handle)+
+          (x.tag?' · 字段 '+esc(x.tag):'')+
+          (x.is_dimension?' · 尺寸标注':'')+
+          (x.shared?' · 共享块×'+esc(x.insert_count||'?'):'')+'</button>';
+      }).join('')+'</div>'+
+      '<div class="batchbox">'+
+        '<div class="batchhead"><b>已选 <span id="selCount">0</span> 项</b>'+
+          '<button class="ghost" id="clearSel" disabled style="margin:0">清空选择</button></div>'+
+        '<div class="batchrows" id="batchRows"></div>'+
+        '<div class="batchfillrow">'+
+          '<input id="batchValue" placeholder="统一新值，例如 620 / 304 / A-002">'+
+          '<button class="ghost" id="batchFill" disabled>批量填入新值</button>'+
+          '<button class="ghost" id="batchBuild" disabled>生成批量指令</button>'+
+        '</div>'+
+        '<div class="src">逐项输入可分别改成不同值；生成指令后仍会先出计划，确认后才执行。</div>'+
+      '</div>';
+  }
+  const suggestions=(scan.suggestions||[]);
+  if(suggestions.length){
+    html+='<div style="margin-top:7px"><div class="src">也可以点单条模板，再补目标值：</div>'+
+      suggestions.map(s=>'<button class="ghost" data-suggest="'+esc(s.instruction)+'" data-hint="'+esc(s.hint||'')+'">'+
+        esc(s.label)+' → 补值</button>').join('')+'</div>';
+  }
+  if(scan.truncated&&!scanAllLoaded){
+    html+='<div style="margin-top:7px"><button class="ghost" data-more="1">展开全部 '+esc(scan.editable_count||'')+' 处可改内容</button></div>';
+  }
+  html+='<div class="src">句柄定位是确定性的；尺寸项会补“只改标注文字”，共享块会补“全部修改”。</div>';
+  box.innerHTML=html;
+  box.querySelectorAll('[data-suggest]').forEach(btn=>{
+    btn.onclick=()=>{
+      const input=$('instruction');
+      input.value=btn.dataset.suggest||'';
+      input.focus();
+      input.setSelectionRange(input.value.length,input.value.length);
+      clearIntent();
+      if(btn.dataset.hint)setSt('createSt',btn.dataset.hint,'warn');
+      else setSt('createSt','已填入指令模板，请补上目标值','ok');
+    };
+  });
+  bindScanItemButtons(items);
+  renderBatchPanel();
+  const more=box.querySelector('[data-more]');
+  if(more)more.onclick=()=>{
+    if(files.dwg&&files.dwg.file_id)inspectUpload(files.dwg.file_id,500,{expand:true});
+  };
+}
+async function createTask(){
+  if(!files.dwg){setSt('createSt','请先上传 DWG / DXF 原图','err');return;}
+  const ins=$('instruction').value.trim();
+  if(!ins){setSt('createSt','请填写修改要求','err');return;}
+  setSt('createSt','AI 解析意图 + 解析 DWG + 检索知识库…','warn');
+  const body={file_id:files.dwg.file_id,instruction:ins};
+  if(files.ref)body.ref_file_id=files.ref.file_id;
+  if(lastIntent&&(lastIntent.enabled||[]).length)body.targets_override=lastIntent.targets;
+  const r=await (await fetch('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)})).json();
+  if(!r.ok){setSt('createSt','失败：'+(r.detail||JSON.stringify(r)),'err');return;}
+  taskId=r.task.task_id;
+  renderTask(r.task);
+  if(r.task.status==='needs_instruction'){
+    setSt('createSt','还没有识别到明确修改，请补充对象和数值后再生成计划','err');
+  }else if(r.task.status==='needs_calibration'){
+    setSt('createSt','图纸尚未定标，已完成解析但拒绝几何修改','warn');
+  }else{
+    setSt('createSt','计划已生成，请确认后执行','ok');
+  }
+}
+async function approve(){
+  await fetch('/api/tasks/'+taskId+'/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  execute();
+}
+async function execute(){
+  setSt('createSt','执行中：受控修改 → 独立质检 → DWG 导出…','warn');
+  const r=await (await fetch('/api/tasks/'+taskId+'/execute',{method:'POST'})).json();
+  if(!r.ok){setSt('createSt','执行失败：'+(r.detail||''),'err');return;}
+  setSt('createSt','执行完成，质检通过','ok');
+  refresh();
+}
+async function runDemo(){
+  setSt('createSt','正在运行内置示例 TD50-40G（不使用参考图）…','warn');
+  const r=await (await fetch('/api/demo/td50',{method:'POST'})).json();
+  if(!r.ok){setSt('createSt','示例失败：'+(r.detail||''),'err');return;}
+  taskId=r.task.task_id;
+  renderTask(r.task);
+  setSt('createSt',r.reused?'已加载示例任务（此前已执行）':'示例执行完成','ok');
+  refresh();
+}
+async function runDemo25(){
+  setSt('createSt','正在运行内置示例 25QYL 标注换算…','warn');
+  const r=await (await fetch('/api/demo/25qyl',{method:'POST'})).json();
+  if(!r.ok){setSt('createSt','示例失败：'+(r.detail||''),'err');return;}
+  taskId=r.task.task_id;
+  renderTask(r.task);
+  setSt('createSt',r.reused?'已加载示例任务（此前已执行）':'示例执行完成','ok');
+  refresh();
+}
+async function runDemoRealMm(){
+  setSt('createSt','正在运行内置示例 25QYL 真实毫米标定…','warn');
+  const r=await (await fetch('/api/demo/25qyl-real-mm',{method:'POST'})).json();
+  if(!r.ok){setSt('createSt','示例失败：'+(r.detail||''),'err');return;}
+  taskId=r.task.task_id;
+  renderTask(r.task);
+  setSt('createSt',r.reused?'已加载真实毫米示例（此前已执行）':'真实毫米示例执行完成','ok');
+  refresh();
+}
+async function refresh(){
+  const r=await (await fetch('/api/tasks/'+taskId)).json();
+  if(r.ok)renderTask(r.task);
+  const q=await (await fetch('/api/tasks/'+taskId+'/report')).json();
+  if(q.ok!==false)renderQA(q);
+  const stamp=Date.now();
+  const previewUrl=kind=>'/api/tasks/'+taskId+'/download?kind='+kind+'&_='+stamp;
+  setCrispPreview('imgBefore',previewUrl('before.svg'),previewUrl('before.png'));
+  setCrispPreview('imgAfter',previewUrl('after.svg'),previewUrl('after.png'));
+  const showZoom=!['annotation','real_mm','text_edit'].includes(currentTaskType);
+  $('imgZoom').parentElement.style.display=showZoom?'':'none';
+  if(showZoom)setCrispPreview('imgZoom',previewUrl('zoom.svg'),previewUrl('zoom.png'));
+  else{
+    crispSeq.set('imgZoom',(crispSeq.get('imgZoom')||0)+1);
+    $('imgZoom').removeAttribute('src');
+  }
+}
+function renderTask(t){
+  const p=t.parse||{};
+  currentTaskType=t.task_type||null;
+  currentTaskStatus=t.status||null;
+  const isReal=t.task_type==='real_mm';
+  const isAnn=t.task_type==='annotation'||isReal;
+  const isText=t.task_type==='text_edit';
+  const statusName={created:'已创建',planned:'待确认',approved:'已确认',executed:'已执行',failed:'失败',needs_calibration:'需定标',needs_instruction:'需补充要求'}[t.status]||t.status;
+  $('parseInfo').innerHTML=
+    '<b>任务</b><span>'+t.task_id+'（'+statusName+'）</span>'+
+    '<b>源文件</b><span>'+(t.files.source?t.files.source.name:'-')+'</span>'+
+    '<b>参考图</b><span>'+(t.files.reference?t.files.reference.name:'未上传（可选）')+'</span>'+
+    '<b>执行链</b><span>'+(isReal?'真实毫米标定':(isAnn?'标注换算/修复':(isText?'文字/标注修改':'几何变形')))+'</span>'+
+    '<b>实体总数</b><span>'+(p.entity_count||'-')+'</span>'+
+    '<b>实体类型</b><span>'+(p.entity_types?Object.entries(p.entity_types).map(e=>e[0]+'×'+e[1]).join('，'):'-')+'</span>'+
+    '<b>识别规则</b><span>'+((t.plan&&t.plan.requested_rules)||[]).join('，')+'</span>';
+  const ops=(t.plan&&t.plan.operations)||[];
+  const it=t.intent||((t.plan||{}).intent);
+  let head='';
+  if(t.status==='needs_instruction'){
+    const need=(t.plan&&t.plan.instruction_required)||{};
+    head='⚠ 修改目标尚未达到可执行条件，已停止执行。\n';
+    if(need.message)head+=need.message+'\n';
+    (need.questions||[]).slice(0,2).forEach(q=>{head+='需要确认：'+q+'\n';});
+    head+='参考图可选；请直接写明对象和数值。\n────────\n';
+  }else if(t.status==='needs_calibration'){
+    const cal=(t.plan&&t.plan.calibration_required)||{};
+    const probs=(cal.problems||[]).slice(0,3);
+    head='⚠ 当前图纸未定标，已拒绝几何修改。\n';
+    if(probs.length)head+='原因：'+probs.join('；')+'\n';
+    head+='下一步：python cli.py calibrate <图纸.dwg> --id <型号>\n────────\n';
+  }else if(isReal&&it){
+    head='AI 听懂（真实毫米链）：总长'+(it.length_value!=null?it.length_value+'mm':'按原基准')+
+         '，总高'+(it.height_value!=null?it.height_value+'mm':'按原基准')+'\n';
+    const an=(t.plan||{}).annotation||{};
+    if(an.measured_count!=null)head+='量得 '+an.measured_count+' 条标注，先对齐两视图总高，再独立标定 kx/ky\n';
+    if((an.preview||[]).length)head+='预览：'+an.preview.map(x=>x.old+'→'+x.new).join('，')+'\n';
+    head+='────────\n';
+  }else if(isAnn&&it){
+    const mn={'1to1':'严格1:1','1to4':'1:4标准','base':'基准定标','cm':'cm换算'};
+    head='AI 听懂（标注链）：'+(it.mode?(mn[it.mode]||it.mode):'仅修复显示')+
+         (it.base_value!=null?'，基准'+it.base_value+'mm':'')+
+         (it.fix_vertical?'，修复竖向标注重叠':'')+'\n';
+    const an=(t.plan||{}).annotation||{};
+    if(an.measured_count!=null)head+='量得 '+an.measured_count+' 条标注，K='+an.K+'\n';
+    if((an.preview||[]).length)head+='预览：'+an.preview.map(x=>x.old+'→'+x.new).join('，')+'\n';
+    if((it.questions||[]).length)head+='需确认：'+it.questions[0]+'\n';
+    head+='────────\n';
+  }else if(isText&&it){
+    head='AI 听懂（文字/标注链）：'+(it.summary||'')+'\n';
+    const te=(t.plan||{}).text_edit||{};
+    if(te.editable_count!=null)head+='图纸中可改文字/标注 '+te.editable_count+' 处\n';
+    const preview=(te.preview||[]).slice(0,5);
+    if(preview.length)head+='预览：'+preview.map(x=>x.old+'→'+x.new+(x.dimension_effect==='label_only'?'（仅标注显示）':'')).join('，')+'\n';
+    if((it.questions||[]).length)head+='需确认：'+it.questions[0]+'\n';
+    head+='────────\n';
+  }else if(it&&(it.enabled||[]).length){
+    const nm={H2:'风罩H2',D2:'接线盒D2',shaft:'轴伸+N'};
+    head='AI 听懂：'+it.enabled.map(k=>nm[k]+'='+(it.targets[k]!=null?it.targets[k]+'mm':'默认')).join('，')+'\n';
+    if((it.questions||[]).length)head+='需确认：'+it.questions[0]+'\n';
+    head+='────────\n';
+  }
+  const emptyMsg=t.status==='needs_calibration'
+    ? '（需要先完成图纸定标，见上方提示）'
+    : (t.status==='needs_instruction'
+      ? '（请补充明确的修改对象和值；尺寸数字请说明“只改标注文字”或“连图形一起改”）'
+      : '（未识别到可执行的修改规则）');
+  $('planBox').textContent=head+(ops.length?ops.map((o,i)=>(i+1)+'. ['+(o.rule||'')+'] '+(o.action||o.op||'')+' → '+(o.target_text||o.target||'')).join('\n'):emptyMsg);
+  const hasExecutablePlan=ops.length>0&&(t.plan||{}).known_rules!==false;
+  $('approveBtn').style.display=(t.status==='planned'&&hasExecutablePlan)?'inline':'none';
+  $('logBox').innerHTML=(t.logs||[]).map(l=>'['+l.t+'] '+l.step+'：'+l.msg).join('\n')||'等待任务…';
+  $('verList').innerHTML=(t.versions||[]).map(v=>'<li>v'+v.version+'　'+v.note+'　'+v.saved_at+'　<button class="ghost" onclick="doRollback('+v.version+')">回滚到此版本</button></li>').join('')||'<li>暂无版本</li>';
+  const acc=t.acceptance;
+  if(acc){
+    const label={accepted:'✅ 已验收通过',needs_work:'⚠ 已标记需要返工',rejected:'❌ 已拒绝'}[acc.verdict]||acc.verdict;
+    $('feedbackInfo').innerHTML=label+'　v'+acc.version+'　'+acc.at+(acc.note?'　'+acc.note:'');
+  }else{
+    $('feedbackInfo').textContent='尚未验收当前任务。';
+  }
+  if(t.status==='executed')renderDeliver();
+}
+function renderDeliver(){
+  const zoom=!['annotation','real_mm','text_edit'].includes(currentTaskType)
+    ? '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=zoom.svg">⬇ 三处改动放大图 SVG（无损放大）</a>'+
+      '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=zoom.png">⬇ 三处改动放大图 PNG</a>'
+    : '';
+  $('deliver').innerHTML=
+    '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=dwg">⬇ 修改后 DWG（CAXA/SolidWorks 可用）</a>'+
+    '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=dxf">⬇ 修改后 DXF</a>'+
+    '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=after.svg">⬇ 修改后对照图 SVG（矢量 · 可无限放大看细节）</a>'+
+    '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=after.png">⬇ 修改后对照图 PNG（全图）</a>'+
+    '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=before.svg">⬇ 修改前对照图 SVG</a>'+
+    zoom+
+    '<a class="ghost" href="/api/tasks/'+taskId+'/download?kind=report">⬇ 质检报告 JSON</a>';
+}
+function renderQA(q){
+  const c=q.checks||{};
+  const row=(n,o)=>'<tr><td>'+n+'</td><td>'+(o&&o.passed?'✅ 通过':'❌ 未通过')+'</td><td>'+(o?JSON.stringify(o).slice(0,120):'')+'</td></tr>';
+  let rows='';
+  if(q.engine==='real_mm_engine'){
+    rows=row('DXF 审计',c.audit)+row('标注=实测',c.annotation_consistency)+
+         row('两视图总高一致',c.view_height)+row('实体结构保持',c.entity_count)+
+         row('规格类保留',c.spec_preserved);
+  }else if(q.engine==='annotation_engine'){
+    rows=row('DXF 审计',c.audit)+row('图形逐条零改动',c.geometry_unchanged)+
+         row('实体数不变',c.entity_count)+row('规格类保留',c.spec_preserved);
+  }else if(q.engine==='text_edit_engine'){
+    rows=row('DXF 审计',c.audit)+row('几何逐条零改动',c.geometry_unchanged)+
+         row('实体数不变',c.entity_count)+row('目标文字已写入',c.text_verified)+
+         row('非目标文字未动',c.untouched_text)+row('尺寸语义保护',c.dimension_guard)+
+         row('共享块保护',c.shared_block_guard);
+  }else{
+    rows=row('DXF 审计',c.audit)+row('非预期改动/删除',c.side_effects)+row('原标注保留',c.annotations)+
+         (c.total_height_link?row('总高联动770→新值',c.total_height_link):'');
+  }
+  const ann=q.annotation||{};
+  const dwgOk=(q.dwg||{}).ok===true||(q.dwg||{}).status;
+  $('qaInfo').innerHTML='<table><tr><th>质检项</th><th>结果</th><th>明细</th></tr>'+rows+
+    (ann.changes?'<tr><td>标注变更</td><td>'+ann.changes.length+' 条</td><td>K='+(ann.K||'')+(ann.vertical_fixes&&ann.vertical_fixes.length?'，竖排修复'+ann.vertical_fixes.length+'处':'')+'</td></tr>':'')+
+    '<tr><td>DWG 导出</td><td>'+(dwgOk?'✅':'待导出')+'</td><td>ODA 高保真转换 AC1032</td></tr></table>';
+}
+async function doRollback(v){
+  await fetch('/api/tasks/'+taskId+'/rollback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:v})});
+  refresh();
+}
+async function sendFeedback(verdict){
+  if(!taskId){setSt('feedbackSt','请先创建并执行任务','err');return;}
+  if(currentTaskStatus!=='executed'){setSt('feedbackSt','任务尚未成功执行，暂不能验收','warn');return;}
+  const note=$('feedbackNote').value.trim();
+  setSt('feedbackSt','正在记录验收并更新自改进候选…','warn');
+  try{
+    const r=await (await fetch('/api/tasks/'+taskId+'/feedback',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({verdict:verdict,note:note,by:'workbench'})
+    })).json();
+    if(!r.ok){setSt('feedbackSt','记录失败：'+(r.detail||''),'err');return;}
+    setSt('feedbackSt','验收已记录；新增回归候选 '+r.new_proposals+' 个','ok');
+    await refresh();
+  }catch(error){setSt('feedbackSt','记录失败：'+error.message,'err');}
+}
+loadHealth();
+</script>
+</body>
+</html>

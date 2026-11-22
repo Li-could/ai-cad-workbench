@@ -1,0 +1,58 @@
+{
+  "version": "1.0.0",
+  "description": "全局免疫约束表：任何变更计划都必须通过这里的不变量校验，违反即回滚。它是防止'改一处牵连其他尺寸'的最后一道闸。",
+  "global": [
+    {
+      "id": "G_INV_01",
+      "name": "真值来源",
+      "rule": "所有 delta 必须带 source_of_truth=original_CAD 或 电机图，禁止 pixel_estimate",
+      "severity": "error",
+      "check": "delta.source_of_truth in ['original_CAD', 'motor_drawing'] and delta.disallow_pixel_estimate == true"
+    },
+    {
+      "id": "G_INV_02",
+      "name": "几何而非数字",
+      "rule": "op 必须是 deform/move/extend 之一，禁止 set_number",
+      "severity": "error",
+      "check": "op in ['deform','move','extend']"
+    },
+    {
+      "id": "G_INV_03",
+      "name": "尺寸链隔离",
+      "rule": "轴伸+20 不得写入 H2 的 delta；H2 的 target 必须保持 443",
+      "severity": "error",
+      "check": "H2.delta == 443 - H2_measured and 20 not in H2.delta_expression"
+    },
+    {
+      "id": "G_INV_04",
+      "name": "免疫对象锁定",
+      "rule": "每个 rule 声明的 invariants 对象集合，在几何变换前后坐标必须完全一致",
+      "severity": "error",
+      "check": "forall inv in rule.invariants: geometry_hash(before, inv.object) == geometry_hash(after, inv.object)"
+    }
+  ],
+  "per_rule_cross_check": [
+    {
+      "id": "X_INV_01",
+      "when": ["SHAFT_EXT_PLUS20", "H2_AXIAL_HEIGHT"],
+      "assert": "SHAFT_EXT 的 +20 未被计入 H2 的 target 或 delta",
+      "severity": "error"
+    },
+    {
+      "id": "X_INV_02",
+      "when": ["D2_RADIAL_TERMINAL_BOX"],
+      "assert": "接线盒变换集不含图层标记含'内部/端子/fixed'的实体",
+      "severity": "error"
+    },
+    {
+      "id": "X_INV_03",
+      "when": ["SHAFT_EXT_PLUS20"],
+      "assert": "变换集不含图层标记含'虚线/支撑/法兰/hidden/support'的实体",
+      "severity": "error"
+    }
+  ],
+  "evidence_requirements": {
+    "must_have": ["source_file", "source_of_truth", "confirmed_by"],
+    "note": "confirmed_by 为空表示尚未人工确认，计划应标记为 pending_review"
+  }
+}

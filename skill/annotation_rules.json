@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0",
+  "name": "cad-annotation-relabel",
+  "description": "25QYL-2SL 同类泵安装图的标注换算与显示修复规则：图形与图框绝对不动，只按用户指定的比例/单位重算长度标注，并修复 eDrawings 里竖向标注字符挤压。所有数值来自图形实测，禁止目测。",
+  "drawing": {
+    "model": "25QYL-2SL",
+    "source_dxf": "由原始 DWG 经 dwg_bridge + dxf_cleaner 生成的 clean.dxf 基线（2684 实体）",
+    "deliverable": "DWG (AC1032 / AutoCAD 2018)，CAXA / SolidWorks / eDrawings 可打开",
+    "unit": "长度标注单位 mm（机械制图国标默认）；cm 模式显式换算"
+  },
+  "engine": "src/annotation_engine.py",
+  "iron_rules": [
+    "图形和图框一个点都不动：LINE/ARC/CIRCLE 逐条坐标零改动，实体数 2684 不变",
+    "只改明确要求的长度标注；规格类 G1/G3/4/4-Φ11 一律不动",
+    "所有换算从 clean.dxf 原始基线出发，幂等；绝不二次换算（output 中间文件常被清理，务必从原始 DWG 重建基线）",
+    "DIMENSION 的文字必须同时改实体 dxf.text 和 geometry 块内 MTEXT/TEXT，否则 ODA/eDrawings 显示旧值（历史坑：只改实体导致 255/291 旧值残留）",
+    "单位判定：不写单位的尺寸默认 mm；610mm=61cm 符合 QY25 潜水泵总长（610cm 不合理）；G1/G3/4 管螺纹+4-Φ11 孔都是 mm 体系",
+    "交付 DWG 保持原图黑白，不做彩色标注；彩色只在对照图"
+  ],
+  "modes": [
+    {
+      "key": "1to1",
+      "aliases": ["1:1", "1比1", "一比一", "实测", "量出来", "图形一致", "1图形单位=1mm"],
+      "meaning": "标注数字 = 图形实测跨度 × 1（1 图形单位 = 1 mm），无任何额外比例系数",
+      "K": 1.0,
+      "note": "用户最终定版采用此模式。14 条标注改为实测：150→36.4、610→144.3、85→30.2、293→72.6、453→104.6、145→31.9、28→8.0、60→18.6、284→70.6、220→53.6、275→73.2、235→62.9、255→62.2、291→72.1"
+    },
+    {
+      "key": "1to4",
+      "aliases": ["1:4", "1比4", "一比四", "标准比例"],
+      "meaning": "标注 = 实测 × 4 取整 mm。依据：14 条原值÷实测比例中 293/291/284/255/220/150 六条集中在 4.0~4.12，中位数 4.04≈4，且 1:4 是 GB/T 14690 标准比例",
+      "K": 4.0,
+      "note": "610 在此模式下变 577（原图画短了）。曾作为推荐版，用户最终仍选 1:1"
+    },
+    {
+      "key": "base",
+      "aliases": ["基准", "以610", "按610", "610为", "基准值", "以某个为真实尺寸"],
+      "meaning": "以某条标注为真实尺寸定标 K=base_value/该条实测，其余=实测×K",
+      "K_formula": "K = base_value / base_measured",
+      "note": "以 610 为基准时 K=610/144.2571≈4.2286，610 保持原值，其余放大 4.23 倍（小数）。用户曾说'610是真值'，后又改为'全部数据最贴合'，最终定 1:1"
+    },
+    {
+      "key": "real_mm",
+      "aliases": ["真实毫米", "毫米版", "实物尺寸", "实际尺寸", "总长610mm"],
+      "meaning": "先把两视图实体外廓等高并对齐底边，再按真实毫米总长/总高独立标定 X/Y；几何与标注一起进入毫米坐标，标注=标定后的尺寸线实测值",
+      "K_formula": "kx = 总长目标 / 总长基准实测；ky = 总高目标 / 总高基准实测",
+      "engine": "src/real_mm_engine.py",
+      "note": "25QYL 定版：总长 610mm、两视图实体外廓均 284mm 且底边同线；先对齐 C5F(291) 到 284 基准，再把右视图实体 275.6 校正到 284（因子 1.03034975），kx=4.228561367、ky=4.025108742。圆弧转椭圆，audit 0/0"
+    },
+    {
+      "key": "cm",
+      "aliases": ["cm", "厘米", "÷10", "除以10", "单位换算"],
+      "meaning": "纯数字长度标注 ÷10 加 cm 后缀；规格类不动",
+      "K": 0.1,
+      "note": "最早的版本，用户后来否定（单位应为 mm）。保留能力以备需要"
+    }
+  ],
+  "measurement": {
+    "block_dims": "12 条在 INSERT 块 GS_BlockDim* 的 TEXT 里；取块内最长水平线跨度（rot=0）或最长竖直线跨度（rot=90）作为实测值",
+    "native_dims": "2 条原生 DIMENSION（handle C52=原255→62.2、C5F=原291→72.1），用 ezdxf d.get_measurement() 测真实跨度；文字同时在实体 dxf.text 与 geometry 块 *X18/*X19 的 MTEXT，两处都要改",
+    "spec_texts": ["G1", "G3/4", "4-%%C11", "4-Φ11", "G1/2", "G1/4", "G3/8"]
+  },
+  "vertical_fix": {
+    "trigger_aliases": ["重叠", "看不清", "小数点", "字符", "标在蓝线", "贴蓝线", "竖排", "数字之间", "间距", "修复"],
+    "root_cause": "eDrawings 对 DIMENSION(TH_GBDIM 样式) 里 rot=0 的 MTEXT 强制沿尺寸线竖排，但把字符间距压扁（62.2 的 6/2/小数点叠一起）。图上其它清晰竖排标注(36.4/70.6/53.6)都是 TEXT + rotation=90（真竖排），字符间距正常",
+    "wrong_attempts": [
+      "推离尺寸线 3→6.3/6.9：数字飘太远，不符合'标在蓝线上'",
+      "推到 x=285：正好压在 x=287 绿色图框线上，数字糊成一团",
+      "只改 MTEXT.insert/text_midpoint：字符仍被压扁，因为根因是实体类型不是位置"
+    ],
+    "correct_fix": {
+      "op": "把 DIMENSION geometry 块内 rot=0 的 MTEXT 删除，新建 TEXT(rotation=90, height=2.5, insert=尺寸线左侧1.5)",
+      "rule": "文字贴竖直尺寸线左侧 gap=1.5，y 取原 text_midpoint.y；字高统一 2.5，与图上其它竖排标注一致；右侧标注贴左边即避开 x=287 绿图框线",
+      "verify": "用 ODA 把交付 DWG 转回 DXF，确认保留 TEXT rot=90 h2.5，未被重新生成 MTEXT（商业内核互认）"
+    }
+  },
+  "parsing_policy": {
+    "task_type_split": "标注换算/修复类（含 1:1/1:4/基准/cm/实测/比例/单位/重叠/竖排/小数点 等词，且不含 H2/D2/轴伸）走 annotation_engine；几何变形类（H2/D2/轴伸）走 geometry_modifier",
+    "default_mode": "1to1",
+    "base_value": "base 模式必须给基准值；未指定则取原值最接近该数的标注",
+    "ambiguous": "既无换算模式也无修复意图时追问，不猜测执行",
+    "output_schema": {
+      "task_type": "annotation",
+      "mode": "1to1|1to4|base|cm|null",
+      "base_value": "number|null",
+      "fix_vertical": "boolean",
+      "unit": "mm|cm",
+      "confidence": "0-1",
+      "summary": "一句话复述",
+      "questions": ["需追问的问题"]
+    }
+  },
+  "delivery": {
+    "pipeline": [
+      "原始 DWG → dwg_bridge.dwg_to_dxf（aspose 只读）→ dxf_cleaner 清洗 = clean.dxf 基线",
+      "annotation_engine.relabel：量全部标注 → 按 mode 算 K → 换算文字 + 规格保护 + DIM 文字同步 + 竖排修复",
+      "四道质检：audit 0 / 几何逐条零改动 / 实体数不变 / 规格类保留",
+      "annotation_engine.export_dwg：ODA 写 DWG(AC1032)",
+      "render_blocks 展开 INSERT/DIMENSION 块渲染 before/after PNG"
+    ],
+    "qa_gates": [
+      {"name": "audit", "pass": "errors==0"},
+      {"name": "geometry_unchanged", "pass": "LINE/ARC/CIRCLE 逐条坐标完全一致"},
+      {"name": "entity_count", "pass": "before==after==2684"},
+      {"name": "spec_preserved", "pass": "G1/G3/4/4-Φ11 未被改动"}
+    ],
+    "env_note": "src/ 下有 py3.11 编译的 numpy/ezdxf，当前 py3.13 加载会崩。app.py/engine.py/annotation_engine.py 顶部必须先 import 全局 numpy/ezdxf 锁定好版本，再把 src 加入 sys.path；render 子进程不得带 PYTHONPATH=src"
+  },
+  "golden_example": {
+    "status": "用户确认的最终定版（1:1 + 竖排修复）",
+    "recipe_id": "25qyl-final-1to1-fixed",
+    "instruction": "把标注改成严格1:1按图形实测，并修复竖向标注重叠看不清",
+    "source": "input/25QYL-2SL.dwg（原始）",
+    "mode": "1to1",
+    "fix_vertical": true,
+    "verified": "14 条标注实测换算 + 2 处竖排修复；audit 0；2665 几何实体逐条零改动；ODA AC1032 导出",
+    "desktop_deliverable": "25QYL-2SL_1比1.dwg"
+  }
+}

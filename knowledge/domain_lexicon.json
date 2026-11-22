@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "description": "工程图领域词典：符号、部件、口语别名与几何语义映射，用于消除用户口语需求与知识卡之间的歧义。",
+  "dimensions": {
+    "H2": {
+      "canonical": "H2_AXIAL_HEIGHT",
+      "meaning": "安装法兰贴合面到风罩最高点的轴向总高",
+      "synonyms": ["H2", "H 2", "总高", "风罩总高", "高度", "罩壳高", "安装面到罩顶"],
+      "direction": "axial",
+      "unit_hint": "mm"
+    },
+    "D2": {
+      "canonical": "D2_RADIAL_TERMINAL_BOX",
+      "meaning": "竖直电机轴线到接线盒最外端的水平径向距离",
+      "synonyms": ["D2", "D 2", "径向", "左右伸出", "接线盒伸出", "接线盒距离", "水平距离"],
+      "direction": "radial",
+      "unit_hint": "mm",
+      "false_friends": ["297", "盒子高度"]
+    },
+    "SHAFT_E": {
+      "canonical": "SHAFT_EXT_PLUS20",
+      "meaning": "轴伸长度（江潮标准轴伸E）",
+      "synonyms": ["轴伸", "轴端", "轴头", "伸出轴", "E", "标准轴伸", "轴端加长"],
+      "direction": "axial_pump_side",
+      "unit_hint": "mm"
+    }
+  },
+  "components": {
+    "罩壳本体": {
+      "aliases": ["罩壳", "风罩壳", "罩子", "fan cover", "FAN_COVER"],
+      "role": "变更对象(H2)",
+      "layer_hints": ["罩壳", "风罩", "FAN", "COVER"]
+    },
+    "绿色罩形": {
+      "aliases": ["绿色罩", "绿罩", "green cover"],
+      "role": "免疫对象(H2)",
+      "layer_hints": ["绿色", "GREEN"]
+    },
+    "安装面": {
+      "aliases": ["安装法兰贴合面", "法兰面", "贴合面", "安装法兰"],
+      "role": "基准面 + 免疫对象",
+      "layer_hints": ["安装", "法兰", "FLANGE", "MOUNT"]
+    },
+    "机身": {
+      "aliases": ["泵体", "泵身", "body"],
+      "role": "免疫对象(H2)",
+      "layer_hints": ["机身", "泵体", "BODY"]
+    },
+    "接线盒": {
+      "aliases": ["接线盒", "端子盒", "terminal box", "junction box", "TERMINAL_BOX"],
+      "role": "变更对象(D2)",
+      "layer_hints": ["接线盒", "端子", "TERMINAL", "BOX"]
+    },
+    "接线盒外盖": {
+      "aliases": ["外盖", "盒盖", "cover", "TERMINAL_BOX_COVER"],
+      "role": "变更对象(D2) - 随动整体",
+      "layer_hints": ["外盖", "COVER"]
+    },
+    "固定内部件": {
+      "aliases": ["内部件", "端子", "固定件"],
+      "role": "免疫对象(D2)",
+      "layer_hints": ["内部", "端子"]
+    },
+    "轴段": {
+      "aliases": ["轴", "轴端", "输出轴", "shaft", "SHAFT"],
+      "role": "变更对象(轴伸)",
+      "layer_hints": ["轴", "SHAFT"]
+    },
+    "键槽": {
+      "aliases": ["键槽", "keyway"],
+      "role": "免疫对象(轴伸)",
+      "layer_hints": ["键槽", "KEY"]
+    },
+    "虚线框内支撑/法兰": {
+      "aliases": ["虚线框", "支撑", "法兰", "连接区"],
+      "role": "免疫对象(轴伸) - 仅示意连接区域",
+      "layer_hints": ["虚线", "支撑", "法兰", "HIDDEN"]
+    }
+  },
+  "direction_words": {
+    "axial": ["轴向", "上下", "高度", "总高", "Z向", "竖直方向"],
+    "radial": ["径向", "左右", "水平", "横向", "X向", "伸出量"],
+    "axial_pump_side": ["沿电机轴向泵侧", "往泵方向", "向泵侧", "轴端伸出"]
+  },
+  "negative_markers": {
+    "description": "出现这些表达时高概率是陷阱，需对照 forbidden 清单",
+    "phrases": ["不是", "不能", "不要", "不得", "保持", "不动", "不能替换", "不能目测", "不等于"]
+  }
+}

@@ -1,0 +1,24 @@
+# 运行时：Python 3.11（vendored 依赖按 cp311 编译）
+#
+# 安装：python -m pip install -r requirements.txt
+# 离线机器：src/ 下已 vendored 同名版本，启动时自动回退，无需联网。
+
+# Web 层
+fastapi==0.141.1
+uvicorn==0.52.3
+python-multipart==0.0.32
+
+# CAD 核心（ezdxf 读写 DXF / aspose-cad 只读 DWG）
+ezdxf==1.4.5
+numpy==2.4.6
+aspose-cad==26.7
+fonttools==4.68.0
+pyparsing==3.3.3
+typing-extensions==4.16.0
+
+# 对照图 PNG 渲染（不需要浏览器）
+matplotlib==3.11.1
+
+# 测试
+pytest==9.1.1
+httpx==0.28.1

@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ChangeRuleCard",
+  "description": "单张变更知识卡的结构约束，用于校验 knowledge/change_cards.json 中 cards 数组的每个元素。",
+  "type": "object",
+  "required": ["rule_id", "enabled", "aliases", "measure", "direction", "target", "delta", "action", "invariants", "forbidden", "evidence"],
+  "properties": {
+    "rule_id": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+    "enabled": { "type": "boolean" },
+    "priority": { "type": "integer", "minimum": 1 },
+    "color_marker": { "type": "string" },
+    "aliases": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "measure": {
+      "type": "object",
+      "required": ["datum_from", "datum_to", "definition"],
+      "properties": {
+        "datum_from": { "type": "string" },
+        "datum_to": { "type": "string" },
+        "definition": { "type": "string" },
+        "plain": { "type": "string" }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "required": ["axis", "kind"],
+      "properties": {
+        "axis": { "type": "string", "enum": ["X", "Y", "Z"] },
+        "kind": { "type": "string", "enum": ["axial", "radial", "axial_pump_side"] },
+        "label": { "type": "string" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["value", "unit", "operator"],
+      "properties": {
+        "value": {},
+        "unit": { "type": "string" },
+        "operator": { "type": "string", "enum": ["eq", "formula"] },
+        "tolerance_mm": { "type": "number" },
+        "base": { "type": "string" },
+        "add": { "type": "number" }
+      }
+    },
+    "delta": {
+      "type": "object",
+      "required": ["formula", "source_of_truth", "disallow_pixel_estimate"],
+      "properties": {
+        "formula": { "type": "string" },
+        "source_of_truth": { "type": "string" },
+        "disallow_pixel_estimate": { "type": "boolean" },
+        "note": { "type": "string" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["op", "object"],
+      "properties": {
+        "op": { "type": "string", "enum": ["deform", "move", "extend"] },
+        "object": { "type": "string" },
+        "detail": { "type": "string" },
+        "geometry_hint": { "type": "string" }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["object", "requirement"],
+        "properties": {
+          "object": { "type": "string" },
+          "requirement": { "type": "string" }
+        }
+      }
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "reason"],
+        "properties": {
+          "rule": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "dependencies": { "type": "array", "items": { "type": "object" } },
+    "evidence": {
+      "type": "object",
+      "required": ["source", "version"],
+      "properties": {
+        "source": { "type": "string" },
+        "confirmed_by": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    }
+  }
+}

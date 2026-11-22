@@ -1,0 +1,49 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+.venv/
+venv/
+env/
+
+.env
+.env.*
+!.env.example
+
+# Runtime data and generated outputs
+data/
+input/
+output/
+workspace/
+*.log
+
+# Local drawing files and generated previews
+*.dwg
+*.dxf
+!examples/sample.dxf
+!tests/sample.dxf
+_diag*
+_render*
+_latest*
+_*.png
+_*.svg
+_*.npy
+
+# Offline/vendor artifacts
+.wheels/
+tools/*.msi
+tools/*.part*
+tools/oda_url.txt
+
+# Local calibration profiles may contain customer geometry
+knowledge/drawings/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>CAD 自改进 Loop</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--line:#dbe3ef;--tx:#14213d;--sub:#64748b;--pri:#1d4ed8;--ok:#047857;--warn:#b45309;--err:#b91c1c;--violet:#6d28d9}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px}
+header{background:#0b1220;color:#e2e8f0;padding:16px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:19px}
+header .tag{background:#172554;color:#bfdbfe;padding:3px 10px;border-radius:10px;font-size:12px}
+header a{margin-left:auto;color:#c4b5fd;text-decoration:none;border:1px solid #4c1d95;padding:7px 12px;border-radius:7px}
+main{max-width:1320px;margin:18px auto;padding:0 18px}
+.hero{background:linear-gradient(135deg,#111827,#312e81);color:#eef2ff;border-radius:14px;padding:20px 24px;display:flex;gap:24px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.hero h2{font-size:18px;margin-bottom:6px}
+.hero p{font-size:13px;line-height:1.8;color:#c7d2fe;max-width:850px}
+.hero .seal{border:1px solid #8b5cf6;border-radius:10px;padding:10px 14px;font-size:12px;color:#ddd6fe;white-space:nowrap}
+.next-action{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:9px;margin-bottom:12px;font-size:13px;border:1px solid var(--line);background:#fff}
+.next-action b{flex:none;font-size:12px;padding:2px 8px;border-radius:8px;background:#e2e8f0;color:#334155}
+.next-action.ok{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+.next-action.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.next-action.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.next-action.error{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button{border:none;border-radius:7px;padding:9px 14px;font-family:inherit;font-size:13px;cursor:pointer}
+button.pri{background:var(--pri);color:#fff}
+button.violet{background:var(--violet);color:#fff}
+button.ghost{background:#fff;color:var(--tx);border:1px solid var(--line)}
+button.ok{background:#047857;color:#fff}
+button.bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+button:disabled{opacity:.55;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-size:22px;margin-bottom:2px}
+.stat span{font-size:12px;color:var(--sub)}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:16px 18px;margin-bottom:14px}
+.card h3{font-size:14px;color:var(--pri);border-left:3px solid var(--pri);padding-left:8px;margin-bottom:10px}
+.status{padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:12px;display:none}
+.status.show{display:block}
+.status.info{background:#eff6ff;color:#1d4ed8}
+.status.ok{background:#ecfdf5;color:#047857}
+.status.err{background:#fef2f2;color:#b91c1c}
+.status.warn{background:#fffbeb;color:#b45309}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:top}
+th{color:var(--sub);font-weight:600;background:#f8fafc}
+.pill{display:inline-block;padding:2px 8px;border-radius:9px;font-size:11.5px;white-space:nowrap}
+.pill.ok{background:#d1fae5;color:#065f46}
+.pill.err{background:#fee2e2;color:#991b1b}
+.pill.warn{background:#fef3c7;color:#92400e}
+.pill.blue{background:#dbeafe;color:#1e40af}
+.proposal{border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin-bottom:10px;background:#fbfdff}
+.proposal h4{font-size:13.5px;margin-bottom:4px}
+.proposal .meta{font-size:11.5px;color:var(--sub);line-height:1.7}
+.proposal details{margin:8px 0}
+.proposal summary{font-size:12px;color:var(--pri);cursor:pointer}
+pre{background:#0f172a;color:#dbeafe;border-radius:7px;padding:10px;font-size:11px;line-height:1.6;max-height:230px;overflow:auto;white-space:pre-wrap;margin-top:7px}
+.proposal .btns{display:flex;gap:6px;margin-top:8px}
+.hint{font-size:12px;color:var(--sub);line-height:1.7}
+.empty{color:var(--sub);font-size:12.5px;padding:10px 0}
+.replay-row{font-size:12.5px;margin:5px 0}
+.mono{font-family:Consolas,monospace}
+@media(max-width:1000px){.stats{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header>
+  <h1>CAD 自改进 Loop</h1>
+  <span class="tag">观察 → 诊断 → 提案 → 重放 → 基线</span>
+  <span class="tag">不自动改代码</span>
+  <a href="/">← 返回改图工作台</a>
+</header>
+<main>
+  <section class="hero">
+    <div>
+      <h2>让每次验收变成下一次改动的护栏</h2>
+      <p>系统把成功结果沉淀为可重放回归用例，把失败归类为可追溯问题；候选必须在隔离目录重放全部硬检查后才能进入基线。代码一改，旧的回归结论自动失效，必须重新验证。</p>
+    </div>
+    <div class="seal">保守学习<br>可回滚 · 可追溯</div>
+  </section>
+
+  <div id="nextAction" class="next-action info"><b>下一步</b><span>正在读取闭环状态…</span></div>
+  <div id="pageStatus" class="status"></div>
+  <div class="actions">
+    <button class="violet" id="cycleBtn" onclick="runCycle()">运行一轮闭环</button>
+    <button class="pri" id="replayBtn" onclick="runReplay()">重放全部回归</button>
+    <button class="ghost" id="sealBtn" onclick="sealCases()">封存基线</button>
+    <button class="ghost" onclick="refresh()">刷新</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h3>失败模式与代码定位</h3>
+        <div id="patterns"></div>
+      </div>
+      <div class="card">
+        <h3>已沉淀回归基线</h3>
+        <div id="cases"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>待审候选提案</h3>
+        <div class="hint" style="margin-bottom:8px">“批准并重放”会先在隔离目录跑完整 DWG 往返；失败则进入隔离区，不会污染基线。</div>
+        <div id="proposals"></div>
+      </div>
+      <div class="card">
+        <h3>最近一次重放</h3>
+        <div id="replay"></div>
+      </div>
+      <div class="card">
+        <h3>SQLite 审计账本</h3>
+        <div class="hint" style="margin-bottom:8px">每条闭环事件写入哈希链；历史被修改会在校验时暴露。</div>
+        <div id="ledger"></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let busy=false;
+function esc(value){
+  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function setStatus(msg,kind='info'){
+  const el=$('pageStatus');el.textContent=msg;el.className='status show '+kind;
+}
+function setBusy(value,label){
+  busy=value;
+  for(const id of ['cycleBtn','replayBtn','sealBtn'])$(id).disabled=value;
+  if(value)setStatus(label||'处理中，请稍候…','info');
+}
+function pill(text,kind='blue'){return '<span class="pill '+kind+'">'+esc(text)+'</span>';}
+async function api(path,options){
+  const response=await fetch(path,options);
+  const data=await response.json().catch(()=>({ok:false,detail:'返回不是 JSON'}));
+  if(!response.ok)throw new Error(data.detail||data.error||('HTTP '+response.status));
+  return data;
+}
+async function refresh(){
+  if(busy)return;
+  try{
+    const [status,proposalsWrapper,casesWrapper,ledger]=await Promise.all([
+      api('/api/learn/status'),
+      api('/api/learn/proposals'),
+      api('/api/learn/cases'),
+      api('/api/learn/ledger?limit=12')
+    ]);
+    renderStatus(status);
+    renderProposals(proposalsWrapper.proposals||[]);
+    renderCases(casesWrapper.cases||[]);
+    renderLedger(ledger);
+    if(!$('pageStatus').classList.contains('show'))setStatus('状态已刷新','ok');
+  }catch(error){setStatus('加载失败：'+error.message,'err');}
+}
+function renderStatus(s){
+  const last=s.last_replay;
+  const stale=s.replay_stale;
+  const readiness=s.baseline_ready;
+  const action=s.next_action||{severity:'info',label:'状态未知'};
+  const next=$('nextAction');
+  next.className='next-action '+esc(action.severity||'info');
+  next.innerHTML='<b>下一步</b><span>'+esc(action.label||'')+'</span>';
+  $('stats').innerHTML=[
+    ['观察样本',s.episodes||0,''],
+    ['回归用例',s.cases||0,''],
+    ['待审提案',s.pending_proposals||0,''],
+    ['最后通过',last?(last.passed+'/'+last.case_count):'—',''],
+    ['回归状态',readiness?'可交付':(stale?'已过期':'未建立'),readiness?'ok':(stale?'warn':'blue')],
+    ['代码指纹',(s.code_fingerprint||'').slice(0,8),'blue'],
+    ['门禁指纹',(s.gate_fingerprint||'').slice(0,8),'blue']
+  ].map(([name,value,kind])=>'<div class="stat"><b>'+(
+    kind?pill(value,kind):esc(value)
+  )+'</b><span>'+esc(name)+'</span></div>').join('');
+
+  const patterns=s.failure_patterns||[];
+  $('patterns').innerHTML=patterns.length?
+    '<table><tr><th>类型</th><th>失败模式</th><th>次数</th><th>定位</th></tr>'+
+    patterns.map(p=>'<tr><td>'+esc(p.task_type)+'</td><td>'+esc(p.label)+'<div class="hint">'+esc(p.suggested_action)+'</div></td><td>'+esc(p.count)+'</td><td class="mono">'+esc((p.files||[]).join(', '))+'</td></tr>').join('')+
+    '</table>':'<div class="empty">暂无失败模式。新失败任务会在下一轮观察后出现。</div>';
+
+  if(!last){
+    $('replay').innerHTML='<div class="empty">尚未建立回归基线。先批准至少一个候选，再点“重放全部回归”。</div>';
+  }else{
+    const rows=(last.results||[]).map(r=>'<div class="replay-row">'+
+      (r.passed?pill('通过','ok'):pill('失败','err'))+'　'+esc(r.title||r.case_id)+
+      '　<span class="mono">'+esc(r.task_type)+'</span>'+
+      (r.error?'<div class="hint">'+esc(r.error)+'</div>':'')+
+      '</div>').join('');
+    $('replay').innerHTML=
+      '<div class="hint">'+(last.ok?pill('基线通过','ok'):pill('基线失败','err'))+
+      '　通过 '+(last.passed||0)+' / '+(last.case_count||0)+
+      '　耗时 '+(last.duration_seconds||0)+'s'+
+      (last.regressions&&last.regressions.length?'　<span class="pill err">回归 '+esc(last.regressions.join(', '))+'</span>':'')+
+      '</div><div style="margin-top:8px">'+(rows||'<div class="empty">无结果</div>')+'</div>';
+  }
+  if(stale)setStatus(action.label||'代码、配置或基线状态已变化，请重放。',
+    action.severity==='error'?'err':'warn');
+}
+function renderProposals(proposals){
+  const pending=proposals.filter(p=>p.status==='proposed');
+  if(!pending.length){$('proposals').innerHTML='<div class="empty">暂无待审提案。运行“闭环”会从最新成功/失败样本生成候选。</div>';return;}
+  $('proposals').innerHTML=pending.map(p=>{
+    const evidence=p.evidence||{};
+    const detail=JSON.stringify({evidence:p.evidence,payload:p.payload},null,2);
+    return '<div class="proposal">'+
+      '<h4>'+esc(p.title||p.proposal_id)+'</h4>'+
+      '<div class="meta">'+pill(p.kind,'blue')+' '+pill(p.task_type||'unknown','warn')+
+      '　'+esc(p.requires||'')+'<br>来源任务：<span class="mono">'+esc(p.task_id||'')+'</span>'+
+      (evidence.feedback?'　验收：'+pill(evidence.feedback,'ok'):'　尚无人工验收')+'</div>'+
+      '<details><summary>查看证据与预期</summary><pre>'+esc(detail)+'</pre></details>'+
+      '<div class="btns"><button class="ok" onclick="reviewProposal(\''+esc(p.proposal_id)+'\',\'approve\')">批准并重放</button>'+
+      '<button class="bad" onclick="reviewProposal(\''+esc(p.proposal_id)+'\',\'reject\')">拒绝</button></div>'+
+      '</div>';
+  }).join('');
+}
+function renderCases(cases){
+  if(!cases.length){$('cases').innerHTML='<div class="empty">还没有回归用例。批准成功提案后，系统会先重放、再沉淀。</div>';return;}
+  $('cases').innerHTML='<table><tr><th>用例</th><th>状态</th><th>类型</th><th>基准</th><th>来源</th></tr>'+
+    cases.map(c=>{
+      const invalidated=(c.status||'active')==='invalidated';
+      const integrity=c._integrity||{};
+      let state=pill('已封存','ok');
+      if(invalidated)state=pill('已失效','err');
+      else if(integrity.status==='broken')state=pill('文件异常','err');
+      else if(integrity.status==='unsealed')state=pill('未封存','warn');
+      return '<tr><td>'+esc(c.title||c.case_id)+'<div class="hint mono">'+esc(c.case_id)+'</div></td><td>'+
+        state+
+        (invalidated&&c.invalidation_reason?'<div class="hint">'+esc(c.invalidation_reason)+'</div>':'')+
+        (integrity.status==='broken'?'<div class="hint">哈希不匹配：'+esc([...(integrity.changed||[]),...(integrity.missing||[])].join(', '))+'</div>':'')+
+        '</td><td>'+pill(c.task_type||'','blue')+'</td><td class="mono">'+esc((c.expected&&c.expected.annotation_count)||'—')+' 条标注</td><td>'+esc(c.origin_task_id||'')+'</td></tr>';
+    }).join('')+
+    '</table>';
+}
+function renderLedger(data){
+  const ledger=data.ledger||{};
+  const verification=ledger.verification||{};
+  const events=data.events||[];
+  const head=(ledger.head_hash||'').slice(0,12);
+  let html='<div class="hint">'+
+    (verification.ok?pill('哈希链完整','ok'):pill('哈希链异常','err'))+
+    '　事件 '+esc(ledger.event_count||0)+
+    '　头哈希 <span class="mono">'+esc(head||'—')+'</span>'+
+    ((data.error_count||0)?'　'+pill('写入错误 '+data.error_count,'err'):'')+
+    '</div>';
+  if(!events.length){
+    html+='<div class="empty">尚无审计事件。</div>';
+  }else{
+    html+='<table style="margin-top:8px"><tr><th>序号</th><th>事件</th><th>对象</th><th>时间</th></tr>'+
+      events.map(e=>'<tr><td class="mono">#'+esc(e.seq)+'</td><td>'+esc(e.event_type)+
+        '<details><summary>载荷</summary><pre>'+esc(JSON.stringify(e.payload,null,2))+'</pre></details></td>'+
+        '<td class="mono">'+esc(e.entity_id||e.entity_type||'—')+'<div class="hint">'+esc(e.actor||'')+'</div></td>'+
+        '<td>'+esc(e.created_at||'')+'</td></tr>').join('')+
+      '</table>';
+  }
+  $('ledger').innerHTML=html;
+  if((data.error_count||0)||verification.ok===false){
+    setStatus('审计账本校验失败：请停止交付并检查 ledger.db 与 ledger_errors.jsonl','err');
+  }
+}
+async function reviewProposal(id,action){
+  if(busy)return;
+  setBusy(true,action==='approve'?'正在隔离重放候选，通过后写入基线…':'正在拒绝提案…');
+  try{
+    const data=await api('/api/learn/proposals/'+encodeURIComponent(id)+'/'+action,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({note:action==='approve'?'自改进面板批准':'自改进面板拒绝',by:'workbench'})
+    });
+    if(data.ok)setStatus(action==='approve'?'候选已通过重放并沉淀为回归基线':'提案已拒绝','ok');
+    else setStatus('候选未通过重放，已进入隔离区：'+(data.proposal&&data.proposal.validation&&data.proposal.validation.error||''),'err');
+    await refresh();
+  }catch(error){setStatus('操作失败：'+error.message,'err');}
+  finally{setBusy(false);}
+}
+async function runCycle(){
+  if(busy)return;
+  setBusy(true,'正在观察任务、归类失败、生成候选并重放基线…');
+  try{
+    const data=await api('/api/learn/cycle',{method:'POST'});
+    const replay=data.replay;
+    setStatus('闭环完成：新增候选 '+data.proposals_created+'，回归 '+
+      (replay?replay.passed+'/'+replay.case_count:'尚未建立基线'),data.ok?'ok':'err');
+    await refresh();
+  }catch(error){setStatus('闭环失败：'+error.message,'err');}
+  finally{setBusy(false);}
+}
+async function runReplay(){
+  if(busy)return;
+  setBusy(true,'正在重放全部回归用例（含 DWG 往返）…');
+  try{
+    const data=await api('/api/learn/replay?with_dwg=true',{method:'POST'});
+    setStatus('重放完成：'+(data.passed||0)+'/'+(data.case_count||0)+' 通过',data.ok?'ok':'err');
+    await refresh();
+  }catch(error){setStatus('重放失败：'+error.message,'err');}
+  finally{setBusy(false);}
+}
+async function sealCases(){
+  if(busy)return;
+  setBusy(true,'正在为未封存基线记录 SHA256 封存信息…');
+  try{
+    const data=await api('/api/learn/cases/seal',{method:'POST'});
+    setStatus('封存完成：新封存 '+data.sealed_count+'，已封存 '+data.skipped_count+
+      '，阻断 '+data.blocked_count,data.ok?'ok':'err');
+    await refresh();
+  }catch(error){setStatus('封存失败：'+error.message,'err');}
+  finally{setBusy(false);}
+}
+refresh();
+</script>
+</body>
+</html>
