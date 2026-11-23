@@ -30,31 +30,39 @@
 
 ## 快速开始
 
+在 Windows 上克隆仓库并用 Python 3.11 启动。
+
 ```powershell
 git clone https://github.com/Li-could/ai-cad-workbench.git
 cd ai-cad-workbench
-python -m pip install -r requirements.txt
-python cli.py check
-python app.py
-# 浏览器打开 http://127.0.0.1:8900/
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe cli.py check
+.\.venv\Scripts\python.exe app.py
 ```
 
-仓库附带 TD50-40G 和 25QYL-2SL 两份 DWG 原图，以及 TD50 对应的标定档案。使用 Python 3.11 安装上述依赖，并在本机安装 ODA File Converter 后，即可从工作台运行 TD50 几何修改、25QYL 标注换算和 25QYL 真实毫米三项演示。
+启动后打开 [本地工作台](http://127.0.0.1:8900/)。
 
-一键跑真实示例（Web）：
+导出 DWG 并做往返回读需要安装 [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter)。
 
-```text
-POST /api/demo/td50?force=true&auto_execute=true
-```
+### 内置图纸演示
 
-该示例只使用内置 DWG 和一句话要求，不绑定参考图。
+仓库附带 TD50 和 25QYL 的演示 DWG，以及 TD50 的定标档案。安装 ODA 后，在工作台可直接运行 TD50 几何修改、25QYL 标注 1:1 换算和 25QYL 真实毫米定标。
 
-命令行跑真实图纸：
+也可以在仓库根目录从命令行执行。
 
 ```powershell
-python cli.py run input\TD50-40G.dwg "H2=443, D2=294, 轴伸加20" `
+.\.venv\Scripts\python.exe cli.py run input\TD50-40G.dwg "H2=443, D2=294, 轴伸加20" `
   --targets "H2=443,D2=294,shaft=20" --out output\td50
+
+.\.venv\Scripts\python.exe tools\run_real_mm.py input\25QYL-2SL.dwg --out-dir output\25qyl-real-mm
 ```
+
+真实毫米入口会以 610 × 284 mm 定标，回读并质检 AC1032 DWG，同时生成 DXF、质检 JSON 和说明。预览使用 Chrome 生成 PNG，并提供 SVG。
+
+### 通用文字编辑示例
+
+上传 `examples/sample.dxf`，输入「把材料改成 304」。生成计划并确认执行后，可查看前后预览和质检结果。详细步骤见 [示例图纸](examples/README.md)。
 
 ## 已验证
 
@@ -70,7 +78,7 @@ python cli.py run input\TD50-40G.dwg "H2=443, D2=294, 轴伸加20" `
 | 通用文字链 | 真实 DWG 扫描 17 处；未说明语义时 execute=409；明确“只改标注文字”后 DWG 回读通过 |
 | 矢量预览 | 预览图同时输出 PNG 与 SVG；历史任务首次下载 SVG 时按需补齐，不改交付文件 |
 | 自改进基线 | 4 条基线已封存；代码/门禁双指纹；隔离重放 4/4 通过，0 回归；SQLite 哈希链账本完整 |
-| 测试 | `python -m pytest -q` → 54 passed |
+| 测试 | `python -m pytest -q`。完整 TD50 基准对比需要本地 golden DXF |
 
 定版产物：
 

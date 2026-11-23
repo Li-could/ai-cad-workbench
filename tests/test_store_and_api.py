@@ -19,8 +19,8 @@ def test_upload_sidecar_survives_without_task(monkeypatch, tmp_path: Path,
     tasks = tmp_path / "tasks"
     monkeypatch.setattr(store, "UPLOADS", uploads)
     monkeypatch.setattr(store, "TASKS", tasks)
-    source = project_root / "input" / "TD50-40G.dwg"
-    record = store.save_upload(source, "TD50-40G.dwg")
+    source = project_root / "tests" / "sample.dxf"
+    record = store.save_upload(source, source.name)
 
     recovered = store.get_file(record["file_id"])
     assert recovered is not None
@@ -29,7 +29,7 @@ def test_upload_sidecar_survives_without_task(monkeypatch, tmp_path: Path,
 
 
 def test_api_creates_geometry_task_without_reference_image(
-    monkeypatch, tmp_path: Path, project_root: Path
+    monkeypatch, tmp_path: Path, td50_dwg: Path, td50_profile
 ):
     uploads = tmp_path / "uploads"
     tasks = tmp_path / "tasks"
@@ -42,11 +42,10 @@ def test_api_creates_geometry_task_without_reference_image(
 
     monkeypatch.setattr(intent_parser, "_call_llm", offline_llm)
     client = TestClient(app_module.app)
-    source = project_root / "input" / "TD50-40G.dwg"
-    with source.open("rb") as stream:
+    with td50_dwg.open("rb") as stream:
         uploaded = client.post(
             "/api/files",
-            files={"file": ("TD50-40G.dwg", stream, "application/octet-stream")},
+            files={"file": (td50_dwg.name, stream, "application/octet-stream")},
         )
     assert uploaded.status_code == 200
     file_id = uploaded.json()["file"]["file_id"]
@@ -63,7 +62,7 @@ def test_api_creates_geometry_task_without_reference_image(
     assert task["files"]["reference"] is None
     assert task["files"]["source"]["file_id"] == file_id
     assert task["status"] == "planned"
-    assert task["profile_id"] == "td50-40g"
+    assert task["profile_id"] == td50_profile.profile_id
     assert task["intent"]["enabled"] == ["H2", "D2", "shaft"]
     assert (task["plan"]["known_rules"]) is True
 
@@ -86,7 +85,8 @@ def test_api_creates_geometry_task_without_reference_image(
     assert execute.status_code == 409
 
 
-def test_api_smoke():
+def test_api_smoke(installed_test_profile, tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     client = TestClient(app_module.app)
 
     health = client.get("/api/health")
@@ -102,11 +102,12 @@ def test_api_smoke():
     payload = profiles.json()
     assert payload["ok"] is True
     ids = {item["profile_id"] for item in payload["profiles"]}
-    assert "td50-40g" in ids
+    profile_id = installed_test_profile.profile_id
+    assert ids == {profile_id}
 
-    detail = client.get("/api/profiles/td50-40g")
+    detail = client.get(f"/api/profiles/{profile_id}")
     assert detail.status_code == 200
-    assert detail.json()["profile"]["profile_id"] == "td50-40g"
+    assert detail.json()["profile"]["profile_id"] == profile_id
 
     missing = client.get("/api/profiles/not-a-profile")
     assert missing.status_code == 404

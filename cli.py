@@ -63,7 +63,6 @@ def cmd_check(_args) -> int:
             diagnostics["versions"].get("ezdxf")
             and diagnostics["versions"].get("numpy")
             and sdk.get("available")
-            and profiles
             and diagnostics.get("writable")
         ),
         "dependency_source": diagnostics.get("dependency_source"),
@@ -80,6 +79,8 @@ def cmd_check(_args) -> int:
     print(_json(report))
     if not sdk.get("oda"):
         print("警告：未找到 ODA File Converter，DWG 写回不可用。", file=sys.stderr)
+    if not profiles:
+        print("提示：几何改图需要先安装对应图纸的定标档案。", file=sys.stderr)
     if not diagnostics.get("llm_configured"):
         print("提示：未配置 DASHSCOPE_API_KEY，将使用关键词兜底解析。", file=sys.stderr)
     return 0 if report["ok"] else 1

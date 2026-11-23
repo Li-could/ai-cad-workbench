@@ -8,16 +8,9 @@
 
 ## 1. 快速开始
 
-```powershell
-cd D:\ai全栈开发\engineering-drawing-ai
-python -m pip install -r requirements.txt
-python cli.py check
-python app.py
-# http://127.0.0.1:8900/
-```
+安装依赖和启动步骤见 [快速开始](README.md#快速开始)。
 
-`cli.py check` 会输出依赖来源、ODA、LLM 配置和已安装档案。核心 CAD 依赖优先用
-全局环境；缺少时整体回退到 `src/` 下的 vendored 副本，不混用来源。
+`cli.py check` 会显示依赖来源、ODA、LLM 配置和已安装档案。已有离线依赖的本地副本可继续从 `src/` 加载。公开检出通过 `requirements.txt` 安装依赖。
 
 ## 2. 真实运行证据
 
@@ -33,7 +26,7 @@ python app.py
 | 无参考图验收 | TD50 `reference=null` 全链路通过；缺信息需求 approve=400 / execute=409 |
 | 高清预览 | 修改前后 / 局部 / 定位图同时输出 PNG + SVG；查看器最高 20×，历史任务按需补 SVG |
 | 自改进基线 | 4 条 sealed；隔离重放 4/4 通过；0 回归 |
-| pytest | 54 passed |
+| pytest | 提供本地 TD50 golden DXF 后可运行完整回归 |
 
 定版产物：
 
@@ -304,7 +297,10 @@ python cli.py profiles install knowledge\drawings\new-model.draft.json
 python -m pytest -q
 ```
 
-真实 HTTP 全链路验收（先启动 `python app.py`）：
+公开检出已包含 TD50 原图和定标档案。逐实体基准对比还需要本地的
+`tests/fixtures/td50-golden/{clean,result}.dxf`。缺少基准文件时，相关测试会报告跳过。
+
+安装 ODA 后，启动 `python app.py`，即可用仓库内置的 TD50 和 25QYL 原图运行 HTTP 验收。
 
 ```powershell
 python tools\http_acceptance.py
@@ -364,7 +360,7 @@ src/dwg_export.py      DXF → DWG（独立临时目录 + 往返校验）
 src/calibration.py     新图纸扫描与档案骨架
 src/gen_compare.py     SVG 对照图（handle 级 diff）
 src/learning_ledger.py SQLite 哈希链审计账本
-workbench/engine.py    三条链统一编排
+workbench/engine.py    几何、标注、真实毫米和文字修改编排
 workbench/store.py     文件型 JSON 存储 / 版本
 knowledge/             知识卡、词典、免疫约束、图纸档案
 web/workbench.html     工作台前端
@@ -384,26 +380,18 @@ legacy/                已归档旧代码与旧前端
 - 真实毫米链的 610 / 284 锚点目前面向 25QYL 图纸；换图需同步锚点。
 - 静态方案 HTML 是历史设计文档；以本 README 与 `项目介绍.md` 为准。
 
-## 13. Codex Skill 一键入口
+## 13. 真实毫米一键交付
 
-真实毫米 1:1 流程已封装为个人 Skill `cad-real-mm`，位置：
-
-```text
-C:\Users\李展宇\.agents\skills\cad-real-mm
-```
-
-它只做入口、参数校验和交付守门；几何算法仍只保留在本项目的
-`src/real_mm_engine.py`，不会出现两套实现。
+仓库内的 `tools/run_real_mm.py` 提供与 `cad-real-mm` Skill 相同的交付流程。
+默认使用 25QYL 的 610 × 284 mm 定版参数，接受 DWG 或 DXF。
 
 ```powershell
-python "C:\Users\李展宇\.agents\skills\cad-real-mm\scripts\run_real_mm.py" `
+python tools\run_real_mm.py `
   "input\25QYL-2SL.dwg" `
   --out-dir "output\25QYL-2SL_真实毫米交付" `
   --stem "25QYL-2SL_1比1_真实毫米610"
 ```
 
-脚本会完成 DWG→DXF、水印清理、毫米单位、两视图实体外廓归一化、标注回写、
-AC1032 DWG 导出、DWG 回读、13 项硬检查，并输出质检报告与说明。
-
-工作台仍保留上传、计划确认、任务历史、版本回滚和可视化预览；推荐把 Skill
-作为日常入口，把工作台作为多人或演示场景的可视化底座。
+脚本调用 `src/real_mm_engine.py` 进行毫米定标、两视图外廓归一化和标注回写。
+AC1032 DWG 通过回读和 13 项检查后，交付 DWG、DXF、质检报告与说明。
+安装 Chrome 后可生成 PNG 与 SVG 预览。用 `--preset custom` 可指定其他图纸的总长、总高和基准标注，参数见 `--help`。

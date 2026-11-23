@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 from pathlib import Path
 
 import ezdxf
@@ -26,14 +25,14 @@ def _write(path: Path, data) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _fake_task(tmp: Path, project_root: Path, task_id: str = "task_learn_1") -> Path:
+def _fake_task(tmp: Path, task_id: str = "task_learn_1") -> Path:
     task_dir = tmp / "tasks" / task_id
     task_dir.mkdir(parents=True)
-    source = tmp / "uploads" / "25QYL-2SL.dwg"
+    source = tmp / "uploads" / "synthetic.dxf"
     source.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(project_root / "input" / "25QYL-2SL.dwg", source)
     doc = ezdxf.new("R2018")
     doc.modelspace().add_line((0, 0), (10, 0))
+    doc.saveas(str(source))
     doc.saveas(str(task_dir / "result.dxf"))
     report = {
         "ok": True,
@@ -65,7 +64,7 @@ def _fake_task(tmp: Path, project_root: Path, task_id: str = "task_learn_1") -> 
         "recipe_id": "test-real-mm",
         "files": {
             "source": {
-                "name": "25QYL-2SL.dwg",
+                "name": source.name,
                 "path": str(source),
                 "size": source.stat().st_size,
                 "sha256": _sha256(source),
@@ -157,12 +156,12 @@ def _fake_text_task(tmp: Path, task_id: str = "task_text_1") -> Path:
 
 
 def test_learning_loop_observes_proposes_and_blocks_invalid_case(
-    tmp_path: Path, monkeypatch, project_root: Path
+    tmp_path: Path, monkeypatch
 ):
     monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     monkeypatch.setattr(store, "TASKS", tmp_path / "tasks")
     monkeypatch.setattr(store, "UPLOADS", tmp_path / "uploads")
-    _fake_task(tmp_path, project_root)
+    _fake_task(tmp_path)
 
     observed = learning_loop.observe()
     assert observed["episode_count"] == 1
@@ -198,12 +197,12 @@ def test_learning_loop_observes_proposes_and_blocks_invalid_case(
 
 
 def test_user_rejection_invalidates_baseline_and_allows_fresh_candidate(
-    tmp_path: Path, monkeypatch, project_root: Path
+    tmp_path: Path, monkeypatch
 ):
     monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     monkeypatch.setattr(store, "TASKS", tmp_path / "tasks")
     monkeypatch.setattr(store, "UPLOADS", tmp_path / "uploads")
-    _fake_task(tmp_path, project_root)
+    _fake_task(tmp_path)
     learning_loop.observe()
 
     episode = learning_loop.list_episodes()[0]
@@ -409,18 +408,18 @@ def test_case_integrity_seals_and_blocks_tampered_baseline(
 
 
 def test_unknown_legacy_task_is_not_counted_as_failure(
-    tmp_path: Path, monkeypatch, project_root: Path
+    tmp_path: Path, monkeypatch
 ):
     monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     monkeypatch.setattr(store, "TASKS", tmp_path / "tasks")
     monkeypatch.setattr(store, "UPLOADS", tmp_path / "uploads")
-    explicit = _fake_task(tmp_path, project_root, task_id="task_legacy_explicit")
+    explicit = _fake_task(tmp_path, task_id="task_legacy_explicit")
     manifest_path = explicit / "manifest.json"
     task = json.loads(manifest_path.read_text(encoding="utf-8"))
     task["task_type"] = "unknown"
     _write(manifest_path, task)
 
-    missing = _fake_task(tmp_path, project_root, task_id="task_legacy_missing")
+    missing = _fake_task(tmp_path, task_id="task_legacy_missing")
     manifest_path = missing / "manifest.json"
     task = json.loads(manifest_path.read_text(encoding="utf-8"))
     task.pop("task_type", None)
@@ -442,12 +441,12 @@ def test_unknown_legacy_task_is_not_counted_as_failure(
 
 
 def test_uncalibrated_task_is_expected_gate_not_failure(
-    tmp_path: Path, monkeypatch, project_root: Path
+    tmp_path: Path, monkeypatch
 ):
     monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     monkeypatch.setattr(store, "TASKS", tmp_path / "tasks")
     monkeypatch.setattr(store, "UPLOADS", tmp_path / "uploads")
-    task_dir = _fake_task(tmp_path, project_root, task_id="task_needs_calibration")
+    task_dir = _fake_task(tmp_path, task_id="task_needs_calibration")
     manifest = task_dir / "manifest.json"
     task = json.loads(manifest.read_text(encoding="utf-8"))
     task["status"] = "needs_calibration"
@@ -467,12 +466,12 @@ def test_uncalibrated_task_is_expected_gate_not_failure(
 
 
 def test_needs_instruction_is_expected_gate_not_failure(
-    tmp_path: Path, monkeypatch, project_root: Path
+    tmp_path: Path, monkeypatch
 ):
     monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     monkeypatch.setattr(store, "TASKS", tmp_path / "tasks")
     monkeypatch.setattr(store, "UPLOADS", tmp_path / "uploads")
-    task_dir = _fake_task(tmp_path, project_root, task_id="task_needs_instruction")
+    task_dir = _fake_task(tmp_path, task_id="task_needs_instruction")
     manifest = task_dir / "manifest.json"
     task = json.loads(manifest.read_text(encoding="utf-8"))
     task["status"] = "needs_instruction"
@@ -494,12 +493,12 @@ def test_needs_instruction_is_expected_gate_not_failure(
 
 
 def test_learning_operations_append_hash_chain_audit(
-    tmp_path: Path, monkeypatch, project_root: Path
+    tmp_path: Path, monkeypatch
 ):
     monkeypatch.setattr(learning_loop, "LEARNING_ROOT", tmp_path / "learning")
     monkeypatch.setattr(store, "TASKS", tmp_path / "tasks")
     monkeypatch.setattr(store, "UPLOADS", tmp_path / "uploads")
-    _fake_task(tmp_path, project_root)
+    _fake_task(tmp_path)
 
     learning_loop.observe()
     learning_loop.record_feedback(

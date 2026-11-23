@@ -1,5 +1,5 @@
-# 运行时：Python 3.11（vendored 依赖按 cp311 编译）
-#
+# -*- coding: utf-8 -*-
+# Python 3.11
 # 安装：python -m pip install -r requirements.txt
 # 离线安装：预先下载与目标平台匹配的依赖包，再用 pip --no-index --find-links 安装。
 
@@ -19,6 +19,7 @@ typing-extensions==4.16.0
 # 对照图 PNG 渲染（不需要浏览器）
 matplotlib==3.11.1
 
-# 测试
+# 测试与 HTTP 验收
 pytest==9.1.1
 httpx==0.28.1
+requests==2.32.5
