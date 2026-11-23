@@ -63,6 +63,7 @@ def cmd_check(_args) -> int:
             diagnostics["versions"].get("ezdxf")
             and diagnostics["versions"].get("numpy")
             and sdk.get("available")
+            and profiles
             and diagnostics.get("writable")
         ),
         "dependency_source": diagnostics.get("dependency_source"),
@@ -74,16 +75,9 @@ def cmd_check(_args) -> int:
         "aspose": sdk.get("aspose"),
         "llm_configured": diagnostics.get("llm_configured"),
         "profiles": [profile.profile_id for profile in profiles],
-        "profiles_ready": bool(profiles),
         "writable": diagnostics.get("writable"),
     }
     print(_json(report))
-    if not profiles:
-        print(
-            "提示：当前没有业务图纸档案。文字/标注链可用；"
-            "几何链需先用 cli.py calibrate 建档案。",
-            file=sys.stderr,
-        )
     if not sdk.get("oda"):
         print("警告：未找到 ODA File Converter，DWG 写回不可用。", file=sys.stderr)
     if not diagnostics.get("llm_configured"):

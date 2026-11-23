@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAD 图纸智能修改工作台</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;background:#f4f6f9;color:#1f2933;line-height:1.5}
+header{background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;padding:18px 28px}
+header h1{font-size:20px;font-weight:700}
+header p{font-size:12px;opacity:.85;margin-top:4px}
+.wrap{max-width:1280px;margin:20px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:18px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:14px;font-weight:700;color:#1e3a8a;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2 .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:#2563eb;color:#fff;font-size:11px;align-items:center;justify-content:center}
+.drop{border:2px dashed #cbd5e1;border-radius:8px;padding:22px;text-align:center;color:#64748b;font-size:13px;cursor:pointer;transition:.2s}
+.drop:hover,.drop.over{border-color:#2563eb;background:#eff6ff;color:#2563eb}
+input[type=file]{display:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#2563eb;color:#fff;border:0;border-radius:7px;padding:9px 16px;font-size:13px;cursor:pointer;font-weight:600;width:100%;margin-top:10px}
+.btn:hover{background:#1d4ed8}
+.btn.ghost{background:#f1f5f9;color:#334155;border:1px solid #cbd5e1}
+.btn.ghost:hover{background:#e2e8f0}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+textarea{width:100%;min-height:90px;border:1px solid #cbd5e1;border-radius:7px;padding:10px;font-size:13px;resize:vertical;font-family:inherit}
+.hint{font-size:11px;color:#94a3b8;margin-top:6px}
+.filechip{display:flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:6px;padding:6px 9px;font-size:12px;margin-top:8px;color:#334155}
+.filechip .x{margin-left:auto;color:#ef4444;cursor:pointer;font-weight:bold}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px;font-size:12px;color:#475569}
+.kv b{color:#1f2933}
+.tag{display:inline-block;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:2px 7px;font-size:11px;margin:2px}
+.op{border:1px solid #e2e8f0;border-left:4px solid #2563eb;border-radius:7px;padding:11px 13px;margin-bottom:10px;background:#fafbfc}
+.op.high{border-left-color:#ef4444}
+.op.medium{border-left-color:#f59e0b}
+.op h3{font-size:13px;margin-bottom:6px;color:#1e2933}
+.op .row{font-size:12px;color:#475569;margin:3px 0}
+.op .row b{color:#1f2933;min-width:64px;display:inline-block}
+.forbid{color:#b91c1c;background:#fef2f2;padding:5px 8px;border-radius:5px;font-size:11px;margin-top:6px}
+.status{padding:9px 12px;border-radius:7px;font-size:12px;margin:8px 0;display:none}
+.status.show{display:block}
+.status.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.status.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.status.info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+pre{background:#0f172a;color:#cbd5e1;padding:12px;border-radius:7px;font-size:11px;overflow:auto;max-height:300px}
+.step{display:flex;gap:8px;align-items:center;font-size:12px;color:#64748b;padding:4px 0}
+.step .dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1}
+.step.done .dot{background:#22c55e}
+.step.active .dot{background:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{padding:6px 12px;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;background:#fff;color:#475569}
+.tab.active{background:#2563eb;color:#fff;border-color:#2563eb}
+iframe{width:100%;height:420px;border:1px solid #e2e8f0;border-radius:7px;background:#fff}
+.empty{text-align:center;color:#94a3b8;padding:36px;font-size:13px}
+a.dl{color:#2563eb;text-decoration:none;font-size:12px;margin-right:12px}
+a.dl:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <h1>CAD 图纸智能修改工作台</h1>
+  <p>依据《CAD图纸智能修改系统_项目建设方案》实现 · 自然语言 + 参考图 → 结构化计划 → 白名单 CAD 执行 → 自动质检 → 可编辑成果</p>
+</header>
+<div class="wrap">
+<!-- 参考示例（用户提供的 TD50-40G.dwg + 修改要求参考图） -->
+<div class="card" style="border:2px solid #2563eb;background:linear-gradient(135deg,#f0f7ff,#fff)">
+  <h2 style="font-size:16px">⭐ 参考示例 · 用你提供的 TD50-40G.dwg + 标注图生成</h2>
+  <div style="font-size:12px;color:#475569;margin-bottom:10px">
+    一键在<strong>真实原始 DWG</strong> 上执行三条变更（H2=443 / D2=294 / 轴伸E+20），保留原图全部几何，
+    输出 <strong>CAXA / SolidWorks</strong> 可直接打开的成果。
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn" id="btnDemo" style="width:auto;margin:0">▶ 运行示例（真实图纸）</button>
+    <a class="dl" id="demoDxf" href="/api/demo/file/dxf" style="display:none;align-self:center">⬇ 修改后 DXF</a>
+    <a class="dl" id="demoDwg" href="/api/demo/file/dwg" style="display:none;align-self:center">⬇ 修改后 DWG</a>
+    <a class="dl" id="demoBefore" href="/api/demo/file/before_svg" target="_blank" style="display:none;align-self:center">⬇ 修改前预览</a>
+    <a class="dl" id="demoAfter" href="/api/demo/file/after_svg" target="_blank" style="display:none;align-self:center">⬇ 修改后预览</a>
+    <a class="dl" id="demoReport" href="/api/demo/file/report" target="_blank" style="display:none;align-self:center">⬇ 校验报告</a>
+  </div>
+  <div id="demoStatus" class="status" style="margin-top:10px"></div>
+  <div id="demoQuality" style="display:none;margin-top:10px;font-size:12px"></div>
+</div>
+
+<div class="grid">
+  <!-- 左栏 -->
+  <div>
+    <div class="card">
+      <h2><span class="n">1</span>文件上传区</h2>
+      <div class="drop" id="dropDwg">点击或拖入 DWG / DXF 原图<br><span style="font-size:11px">原始文件只读保存，绝不覆盖</span></div>
+      <input type="file" id="fileDwg" accept=".dwg,.dxf">
+      <div id="dwgChip"></div>
+      <div class="drop" id="dropRef" style="margin-top:12px">点击或拖入参考图 PNG / JPG</div>
+      <input type="file" id="fileRef" accept="image/*">
+      <div id="refChip"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>需求输入区</h2>
+      <textarea id="req">按照参考图要求修改这张图：H2 做到 443mm，D2 改成 294mm，轴端再加 20mm，其他部分保持不变。</textarea>
+      <div class="hint">不明确时系统会主动追问；关键尺寸需人工确认后执行。</div>
+      <button class="btn" id="btnPlan">生成修改计划</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>图纸预览区</h2>
+      <div id="drawingInfo" class="empty">上传图纸后显示图层 / 实体 / 尺寸清单</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>执行状态区</h2>
+      <div class="step" id="s1"><span class="dot"></span>上传与解析</div>
+      <div class="step" id="s2"><span class="dot"></span>需求识别与计划</div>
+      <div class="step" id="s3"><span class="dot"></span>人工确认</div>
+      <div class="step" id="s4"><span class="dot"></span>CAD 执行</div>
+      <div class="step" id="s5"><span class="dot"></span>自动质检</div>
+      <div id="statusBox" class="status"></div>
+      <button class="btn ghost" id="btnConfirm" style="display:none">确认并真实执行修改</button>
+    </div>
+  </div>
+
+  <!-- 右栏 -->
+  <div>
+    <div class="card">
+      <h2><span class="n">5</span>修改计划区 <span id="planStatus" style="font-size:11px;font-weight:400;color:#64748b"></span></h2>
+      <div id="planBox" class="empty">生成计划后，逐条显示待修改对象、动作、目标参数、风险与禁止项</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">6</span>结果交付区</h2>
+      <div id="resultBox" class="empty">执行完成后提供修改后文件、预览图、差异报告与操作记录</div>
+      <div class="tabs" id="resultTabs" style="display:none">
+        <div class="tab active" data-t="report">校验报告</div>
+        <div class="tab" data-t="diff">差异图</div>
+        <div class="tab" data-t="download">下载</div>
+      </div>
+      <div id="resultContent" style="display:none">
+        <pre id="reportPre"></pre>
+        <iframe id="diffFrame" style="display:none"></iframe>
+        <div id="downloadBox" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let TASK=null, PLAN=null, RESULT=null;
+function api(path,opt){return fetch(path,opt).then(r=>r.json())}
+function b64(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(file)})}
+function status(msg,type='info'){const b=$('statusBox');b.textContent=msg;b.className='status show '+type}
+function step(n){for(let i=1;i<=5;i++){const e=$('s'+i);e.className='step'+(i<n?' done':i===n?' active':'')}}
+
+async function uploadDwg(file){
+  status('正在上传并解析图纸（大文件可能需要几十秒）…','info');step(1);
+  const data=await b64(file);
+  const r=await api('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:file.name,data})});
+  if(!r.ok){status('上传失败：'+r.error,'err');return}
+  TASK=r.task_id;
+  $('dwgChip').innerHTML='<div class="filechip">📄 '+file.name+' <span class="x" onclick="this.parentNode.remove()">×</span></div>';
+  if(r.parse_error){status('图纸上传成功，但解析受限：'+r.parse_error,'err')}
+  else{status('图纸解析完成（'+JSON.stringify(r.counts||{})+'）'+(r.parse_note?' · '+r.parse_note:''),'ok')}
+  updateDrawingInfo(r.counts);
+  step(2);
+}
+async function uploadRef(file){
+  if(!TASK){status('请先上传 DWG 图纸','err');return}
+  const data=await b64(file);
+  const r=await api('/api/reference/'+TASK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:file.name,data})});
+  if(r.ok){$('refChip').innerHTML='<div class="filechip">🖼 '+file.name+' <span class="x" onclick="this.parentNode.remove()">×</span></div>';status('参考图已上传，需求识别时会一并参考','ok')}
+}
+function updateDrawingInfo(counts){
+  if(!counts){$('drawingInfo').innerHTML='已上传，解析结果见状态提示';return}
+  $('drawingInfo').innerHTML='<div class="kv"><b>实体总数</b><span>'+(counts.entities||0)+'</span><b>尺寸标注</b><span>'+(counts.dimensions||0)+'</span><b>文字</b><span>'+(counts.texts||0)+'</span><b>块参照</b><span>'+(counts.inserts||0)+'</span></div>';
+}
+
+$('dropDwg').onclick=()=>$('fileDwg').click();
+$('fileDwg').onchange=e=>e.target.files[0]&&uploadDwg(e.target.files[0]);
+$('dropRef').onclick=()=>$('fileRef').click();
+$('fileRef').onchange=e=>e.target.files[0]&&uploadRef(e.target.files[0]);
+['dropDwg','dropRef'].forEach(id=>{
+  const el=$(id);el.ondragover=e=>{e.preventDefault();el.classList.add('over')};
+  el.ondragleave=()=>el.classList.remove('over');
+  el.ondrop=e=>{e.preventDefault();el.classList.remove('over');const f=e.dataTransfer.files[0];if(f){(id==='dropDwg')?uploadDwg(f):uploadRef(f)}};
+});
+
+$('btnPlan').onclick=async()=>{
+  if(!TASK){status('请先上传 DWG 图纸','err');return}
+  const text=$('req').value.trim();
+  status('正在识别需求并生成结构化修改计划…','info');step(2);
+  const r=await api('/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:TASK,text})});
+  if(!r.ok){status('生成计划失败：'+r.error,'err');return}
+  PLAN=r.plan;renderPlan();
+  $('planStatus').textContent='状态：'+r.status;
+  if(r.status==='awaiting_confirmation'){
+    status('计划含关键尺寸/低置信度操作，请核对后点“确认并真实执行修改”','info');step(3);
+    $('btnConfirm').style.display='block';
+  }else{
+    status('计划已生成，可直接执行','ok');step(3);$('btnConfirm').style.display='block';
+  }
+};
+
+function renderPlan(){
+  if(!PLAN||!PLAN.operations.length){$('planBox').innerHTML='<div class="empty">未识别到可执行修改</div>';return}
+  let h='';
+  PLAN.operations.forEach(op=>{
+    const t=op.target||{},p=op.params||{};
+    h+='<div class="op '+op.risk+'"><h3>'+op.op_id+' · '+op.operation+'</h3>';
+    h+='<div class="row"><b>目标</b>'+(t.handle&&t.handle!=='PENDING'?'句柄 '+t.handle:'<span style="color:#b91c1c">未定位（需人工点选）</span>')+(t.near?' · '+t.near:'')+'</div>';
+    if(p.new_text)h+='<div class="row"><b>新内容</b><code>'+p.new_text+'</code></div>';
+    if(p.target_value!==undefined&&p.target_value!==null)h+='<div class="row"><b>目标值</b>'+p.target_value+' mm</div>';
+    h+='<div class="row"><b>依据</b>'+(op.reason||'')+'</div>';
+    h+='<div class="row"><b>验证</b>'+(op.verification||'')+'</div>';
+    if(op.forbidden&&op.forbidden.length)h+='<div class="forbid">⛔ 禁止：'+op.forbidden.map(x=>typeof x==='string'?x:JSON.stringify(x)).join('；')+'</div>';
+    if(op.requires_confirmation)h+='<div class="row" style="color:#b45309">⚠ 此项需人工确认</div>';
+    h+='</div>';
+  });
+  if(PLAN.global_invariants&&PLAN.global_invariants.length){
+    h+='<div class="card" style="background:#f8fafc;margin:8px 0 0"><b style="font-size:12px">全局免疫约束</b><ul style="font-size:11px;color:#475569;margin:6px 0 0 18px">'+PLAN.global_invariants.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>';
+  }
+  $('planBox').innerHTML=h;
+}
+
+$('btnConfirm').onclick=async()=>{
+  status('正在白名单执行修改并自动质检…','info');step(4);$('btnConfirm').disabled=true;
+  const r=await api('/api/execute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:TASK,confirmed:true})});
+  $('btnConfirm').disabled=false;
+  if(!r.ok){status('执行失败：'+(r.error||'未知错误'),'err');return}
+  RESULT=r.result;renderResult();
+  const q=RESULT.quality||{};
+  if(q.overall_passed){status('执行完成，全部质检通过（重开测试通过）','ok');step(6)}
+  else{status('执行完成，但部分质检未通过，请查看报告','err');step(6)}
+};
+
+function renderResult(){
+  $('resultBox').innerHTML='<div style="font-size:13px;color:#334155">已生成修改后文件：<b>'+(RESULT.output_name||'')+'</b></div>'+
+    '<div style="margin-top:8px"><a class="dl" href="/api/result/'+TASK+'/output">⬇ 修改后 DXF</a><a class="dl" href="/api/result/'+TASK+'/report">⬇ 校验报告 JSON</a><a class="dl" href="/api/result/'+TASK+'/original">⬇ 原始文件</a></div>';
+  $('resultTabs').style.display='flex';$('resultContent').style.display='block';
+  $('reportPre').textContent=JSON.stringify(RESULT.quality,null,2);
+  $('diffFrame').src='/api/result/'+TASK+'/diff';
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  const k=t.dataset.t;
+  $('reportPre').style.display=k==='report'?'block':'none';
+  $('diffFrame').style.display=k==='diff'?'block':'none';
+  $('downloadBox').style.display=k==='download'?'block':'none';
+});
+$('downloadBox').innerHTML='<div style="font-size:13px"><a class="dl" href="/api/result/'+TASK+'/output">修改后 DXF</a><a class="dl" href="/api/result/'+TASK+'/original">原始 DWG</a><a class="dl" href="/api/result/'+TASK+'/report">报告</a></div>';
+
+// ===== 参考示例：一键跑真实 TD50-40G.dwg =====
+$('btnDemo').onclick=async()=>{
+  const b=$('btnDemo'),q=$('demoQuality'),st=$('demoStatus');
+  b.disabled=true;b.textContent='正在处理真实图纸…';
+  st.textContent='正在用 CAD SDK 打开原始 DWG → 清洗 → 叠加三条变更 → 质检…（约 10 秒）';
+  st.className='status show info';q.style.display='none';
+  try{
+    const r=await api('/api/demo/real');
+    if(!r.ok){st.textContent='示例失败：'+(r.error||'未知错误');st.className='status show err';return}
+    const d=r.demo,g=d.geo;
+    st.textContent='完成！三处几何已按实体区域整体变形，非目标实体零改动。';
+    st.className='status show ok';
+    q.style.display='block';
+    q.innerHTML='<div class="kv" style="background:#f8fafc;padding:10px;border-radius:6px">'+
+      '<b>源文件</b><span>TD50-40G.dwg (AC1032 原始图纸)</span>'+
+      '<b>实体数量</b><span>'+g.entities_before+' → '+g.entities_after+'（仅新增目标标注）</span>'+
+      '<b>H2</b><span>443.0 mm · 风罩顶 '+g.H2.old_top_y+' → '+g.H2.new_top_y+' · '+g.H2.entities_moved+' 个实体</span>'+
+      '<b>D2</b><span>294.0 mm · 盒外端 '+g.D2.old_outer_x+' → '+g.D2.new_outer_x+' · 外盖 '+g.D2.cover_entities_moved+' / 连接臂 '+g.D2.arm_entities_stretched+'</span>'+
+      '<b>轴伸</b><span>E+20 mm · 轴端 '+g.SHAFT.old_end_y+' → '+g.SHAFT.new_end_y+' · '+g.SHAFT.entities_moved+' 个实体</span>'+
+      '<b>零改动校验</b><span style="color:#065f46">非预期改动 0 / 删除 0 / 最终审计 '+g.final_audit_errors+' 错误 '+g.final_audit_fixes+' 修复 ✓</span>'+
+      '<b>DWG 输出</b><span>'+(d.dwg&&d.dwg.ok?'ODA 高保真 DWG 已生成':'尚未安装 ODA File Converter，请用 CAXA 打开 DXF 另存 DWG')+'</span>'+
+      '<b>兼容性</b><span>CAXA 直接编辑；SolidWorks 可导入草图/工程图</span></div>';
+    ['demoDxf','demoBefore','demoAfter','demoReport'].forEach(id=>$(id).style.display='inline');
+    if(d.dwg&&d.dwg.ok) $('demoDwg').style.display='inline';
+  }catch(e){st.textContent='示例请求异常：'+e;st.className='status show err'}
+  finally{b.disabled=false;b.textContent='▶ 运行示例（真实图纸）'}
+};
+
+api('/api/health').then(r=>status('工作台已连接后端服务','ok')).catch(()=>status('后端服务未连接','err'));
+</script>
+</body>
+</html>

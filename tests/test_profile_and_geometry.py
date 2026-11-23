@@ -58,11 +58,8 @@ def test_unknown_drawing_is_rejected_for_geometry():
     profile, report = drawing_profile.resolve_for(doc)
     assert profile is None
     assert report["ok"] is False
-    default_profile = drawing_profile.get_profile("td50-40g")
-    if default_profile is None:
-        pytest.skip("公开仓库不包含 TD50 业务档案")
     with pytest.raises(drawing_profile.ProfileMismatch):
-        default_profile.require(doc)
+        drawing_profile.get_profile("td50-40g").require(doc)
 
 
 def test_new_engine_matches_golden_entities(golden_task: Path, tmp_path: Path):

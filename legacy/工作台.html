@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一句话改图工作台 · TD50-40G</title>
+<style>
+  :root{--bg:#f4f6f9;--card:#fff;--ink:#1f2430;--sub:#5b6472;--line:#e3e7ee;--blue:#2563eb;--blue-s:#eff4ff;--red:#dc2626;--orange:#ea580c;--green:#059669;--shadow:0 4px 18px rgba(20,30,60,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.7}
+  header{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#3b82f6);color:#fff;padding:22px 32px}
+  header h1{margin:0;font-size:22px}header p{margin:6px 0 0;color:#dbe7ff;font-size:13px}
+  .badge{display:inline-block;background:rgba(255,255,255,.18);border-radius:20px;padding:3px 11px;font-size:11px;margin-bottom:8px}
+  .wrap{max-width:1440px;margin:0 auto;padding:22px 26px 60px}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:20px}
+  .col{display:flex;flex-direction:column;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+  .card h2{font-size:15px;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block}
+  textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13.5px;resize:vertical;font-family:inherit;outline:none}
+  textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-s)}
+  .examples{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+  .chip{border:1px solid var(--line);background:#fafbfc;border-radius:16px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--sub)}
+  .chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-s)}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;font-size:14px;font-weight:600}
+  .btn-primary{width:100%;background:var(--blue);color:#fff;padding:12px;margin-top:6px}
+  .btn-primary:hover{background:#1d4ed8}
+  .btn-primary:disabled{background:#9db4e0;cursor:wait}
+  .hint{font-size:12px;color:var(--sub);background:#f8fafc;border-radius:8px;padding:10px 12px;margin-top:12px;border-left:3px solid var(--blue)}
+  .rcard{border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin-bottom:11px;background:#fff;position:relative;overflow:hidden}
+  .rcard.red{border-left:4px solid var(--red)}.rcard.blue{border-left:4px solid var(--blue)}.rcard.orange{border-left:4px solid var(--orange)}
+  .rcard h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600}
+  .tag.red{background:#fef2f2;color:var(--red)}.tag.blue{background:#eff4ff;color:var(--blue)}.tag.orange{background:#fff7ed;color:var(--orange)}
+  .kv{display:grid;grid-template-columns:72px 1fr;gap:3px 10px;font-size:12.5px;color:var(--sub)}
+  .kv b{color:var(--ink)}
+  .warn{font-size:11.5px;color:#9a3412;background:#fff7ed;border-radius:7px;padding:6px 9px;margin-top:8px}
+  .empty{color:#94a3b8;text-align:center;padding:34px 10px;font-size:13px}
+  .preview{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;display:block}
+  .downloads{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .btn-dl{background:var(--green);color:#fff;padding:10px 16px}
+  .btn-dl:hover{background:#047857}
+  .btn-ghost{background:#f1f5f9;color:#334155;border:1px solid var(--line)}
+  .btn-ghost:hover{background:#e2e8f0}
+  .status{font-size:12.5px;padding:9px 12px;border-radius:8px;margin-top:12px;display:none}
+  .status.ok{display:block;background:#ecfdf5;color:#065f46}
+  .status.err{display:block;background:#fef2f2;color:#991b1b}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .step{font-size:11.5px;color:var(--sub);background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  footer{text-align:center;color:#94a3b8;font-size:11.5px;padding:26px}
+  details{font-size:12.5px;color:var(--sub);margin-top:10px}
+  summary{cursor:pointer;color:var(--blue)}
+</style>
+</head>
+<body>
+<header>
+  <span class="badge">AI 工程图改图工作台 · 演示版</span>
+  <h1>一句话，改好图 —— TD50-40G 泵安装图</h1>
+  <p>输入你的要求，系统自动识别变更、生成改前/改后对照，并导出可在 CAD 中直接打开的修改后 DXF 文件。</p>
+</header>
+<div class="wrap">
+  <div class="grid">
+    <!-- 左列 -->
+    <div class="col">
+      <div class="card">
+        <h2><span class="dot"></span>① 说出你的要求</h2>
+        <textarea id="req" placeholder="例如：把风罩高度做到443，接线盒伸出改成294，轴端再加20"></textarea>
+        <div class="examples">
+          <span class="chip" data-t="按新电机改：风罩高度做到443，接线盒伸出改成294，轴端再加20">图片里的完整要求</span>
+          <span class="chip" data-t="把H2改成443">只改 H2</span>
+          <span class="chip" data-t="接线盒伸出改成294，注意297不是D2">改 D2</span>
+          <span class="chip" data-t="轴伸加20，键槽保持，法兰不要拉长">轴伸 +20</span>
+        </div>
+        <button class="btn-primary" id="run">开始改图</button>
+        <div class="status" id="stOk"></div>
+        <div class="status" id="stErr"></div>
+        <div class="hint">
+          <b>工作原理：</b>系统用内置的三张"变更知识卡"识别你的口语（风罩高度→H2、接线盒伸出→D2、轴伸→轴端），按规则生成变更计划，再交给 DXF 生成器做精确几何修改。大模型的角色是"理解+决策"，几何由确定性程序执行。<br><br>
+          <b>数据说明：</b>本演示按图中标注参数重建图纸：改前示意值 H2=418、D2=281，改后为目标值 443 / 294 / +20。真实改变量必须从原 CAD 实测。
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="dot" style="background:var(--orange)"></span>执行流程</h2>
+        <div class="steps">
+          <span class="step">1 识别需求</span><span class="step">2 匹配知识卡</span>
+          <span class="step">3 生成变更计划</span><span class="step">4 约束校验</span>
+          <span class="step">5 修改几何与标注</span><span class="step">6 导出 DXF</span>
+        </div>
+        <details>
+          <summary>本图三条变更规则（来自标注图）</summary>
+          <div style="margin-top:8px">
+            <b style="color:var(--red)">① H2=443</b>：改罩壳本体轴向长度，两侧壁变形、整罩随动；绿色罩形/安装面/机身不动；443 是总高不是风罩长度，移动量不能截图目测。<br>
+            <b style="color:var(--blue)">② D2=294</b>：电机轴线→接线盒最外端的水平距离，调左右径向伸出、外盖随动、内部件不动；<b>297 不是 D2</b>，不可直接替换。<br>
+            <b style="color:var(--orange)">③ 轴伸+20</b>：新轴伸=江潮标准轴伸E+20，沿轴向泵侧；键槽保持，+20 不加到 H2，不拉长虚线框内支撑/法兰。
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- 右列 -->
+    <div class="col">
+      <div class="card">
+        <h2><span class="dot" style="background:var(--red)"></span>② 识别到的变更计划</h2>
+        <div id="plan"><div class="empty">输入要求并点击"开始改图"，这里会列出将要执行的变更</div></div>
+      </div>
+      <div class="card">
+        <h2><span class="dot" style="background:var(--green)"></span>③ 改前 / 改后对照</h2>
+        <div id="preview"><div class="empty">等待生成对照图…</div></div>
+        <div class="downloads" id="downloads" style="display:none">
+          <button class="btn-dl" id="dlAfter">↓ 下载修改后 DXF（CAD 可打开）</button>
+          <button class="btn-ghost" id="dlBefore">↓ 下载修改前 DXF</button>
+          <button class="btn-ghost" id="dlSvg">↓ 下载对照图 SVG</button>
+        </div>
+        <div class="hint" style="margin-top:14px">
+          <b>如何在 CAD 中打开：</b>下载 <code>.dxf</code> 后，用 AutoCAD / 中望 / 浩辰 / LibreCAD 直接"打开"该文件即可看到完整图纸，三处修改用红/蓝/橙色与图层区分，可继续编辑。<br>
+          若要正式替换你的 <code>TD50-40G.dwg</code>：先用 CAD 把原 DWG 另存为 DXF，我方可在原图实体上做精确修改（本演示为参数化重建，替换前请人工复核）。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>一句话改图工作台 · 演示版 · 依据 TD50-40G 三色标注样本 · 工程图责任重大，成果须人工复核后使用</footer>
+
+<script>
+/* ============ DXF 生成器（与 Python 版一致，零依赖） ============ */
+const RED=1,BLUE=5,ORANGE=30,GREY=8,BLACK=7;
+const LAYERS=[["轮廓",BLACK],["中心线",4],["尺寸",BLACK],["文字",BLACK],
+  ["修改_H2",RED],["修改_D2",BLUE],["修改_轴伸",ORANGE],["原位置参考",GREY],["混凝土",9]];
+function esc(s){let o='';for(const ch of s){const cp=ch.codePointAt(0);o+=(cp>=32&&cp<127)?ch:'\\U+'+cp.toString(16).toUpperCase().padStart(4,'0');}return o;}
+class DXF{
+  constructor(){this.e=[];}
+  p(c,v){this.e.push(c+'\n'+v+'\n');}
+  line(x1,y1,x2,y2,layer='轮廓',color){this.p(0,'LINE');this.p(8,layer);if(color)this.p(62,color);this.p(10,x1.toFixed(3));this.p(20,y1.toFixed(3));this.p(30,0);this.p(11,x2.toFixed(3));this.p(21,y2.toFixed(3));this.p(31,0);}
+  rect(x1,y1,x2,y2,layer='轮廓',color){this.line(x1,y1,x2,y1,layer,color);this.line(x2,y1,x2,y2,layer,color);this.line(x2,y2,x1,y2,layer,color);this.line(x1,y2,x1,y1,layer,color);}
+  circle(cx,cy,r,layer='轮廓',color){this.p(0,'CIRCLE');this.p(8,layer);if(color)this.p(62,color);this.p(10,cx.toFixed(3));this.p(20,cy.toFixed(3));this.p(30,0);this.p(40,r.toFixed(3));}
+  arc(cx,cy,r,a1,a2,layer='轮廓',color){this.p(0,'ARC');this.p(8,layer);if(color)this.p(62,color);this.p(10,cx.toFixed(3));this.p(20,cy.toFixed(3));this.p(30,0);this.p(40,r.toFixed(3));this.p(50,a1);this.p(51,a2);}
+  text(s,x,y,h=14,layer='文字',color,rot=0){this.p(0,'TEXT');this.p(8,layer);if(color)this.p(62,color);this.p(10,x.toFixed(3));this.p(20,y.toFixed(3));this.p(30,0);this.p(40,h);this.p(1,esc(s));this.p(50,rot);this.p(7,'STANDARD');}
+  dimV(x,y1,y2,label,layer='尺寸',color){this.line(x-12,y1,x+12,y1,layer,color);this.line(x-12,y2,x+12,y2,layer,color);this.line(x,y1,x,y2,layer,color);const a=Math.min(9,(y2-y1)/4);this.line(x,y1,x-3,y1+a,layer,color);this.line(x,y1,x+3,y1+a,layer,color);this.line(x,y2,x-3,y2-a,layer,color);this.line(x,y2,x+3,y2-a,layer,color);this.text(label,x-3,(y1+y2)/2,12,layer,color,90);}
+  dimH(y,x1,x2,label,layer='尺寸',color){this.line(x1,y-12,x1,y+12,layer,color);this.line(x2,y-12,x2,y+12,layer,color);this.line(x1,y,x2,y,layer,color);const a=Math.min(9,(x2-x1)/4);this.line(x1,y,x1+a,y-3,layer,color);this.line(x1,y,x1+a,y+3,layer,color);this.line(x2,y,x2-a,y-3,layer,color);this.line(x2,y,x2-a,y+3,layer,color);this.text(label,(x1+x2)/2-label.length*3,y+6,12,layer,color);}
+  leader(x1,y1,x2,y2,label,layer='文字',color){this.line(x1,y1,x2,y2,layer,color);this.text(label,x2+3,y2,12,layer,color);}
+  build(){let h='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n9\n$HANDSEED\n5\nFFFF\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n5\n2\n100\nAcDbSymbolTable\n70\n'+LAYERS.length+'\n';LAYERS.forEach(([n,c],i)=>{const hh=(0x20+i).toString(16).toUpperCase();h+='0\nLAYER\n5\n'+hh+'\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n2\n'+esc(n)+'\n70\n0\n62\n'+c+'\n6\nCONTINUOUS\n';});h+='0\nENDTAB\n0\nENDSEC\n';return h+'0\nSECTION\n2\nENTITIES\n'+this.e.join('')+'0\nENDSEC\n0\nEOF\n';}
+}
+const FLANGE_Y=300,BASE_Y=120;
+function drawFrame(d,mode){const W=1200,H=900;d.rect(15,15,W-15,H-15);d.rect(25,25,W-25,H-25);d.rect(W-420,25,W-25,130);d.line(W-420,75,W-25,75);d.line(W-260,25,W-260,130);d.text('TD50-40G 立式管道泵安装图（'+mode+'）',W-412,100,16);d.text('修改: H2=443 / D2=294 / 轴伸 E+20',W-412,55,13);d.text('比例 1:10',W-252,100,13);d.text('单位 mm',W-252,60,13);d.text('阶段1 AI改图成果（示意重建，替换原DWG前请人工复核）',40,40,12);}
+function drawConcrete(d,d2=0){d.rect(-217.5,BASE_Y-140,217.5,BASE_Y,'混凝土',GREY);for(let x=-207;x<217;x+=26)d.line(x,BASE_Y-140,x+20,BASE_Y,'混凝土',GREY);d.text('推荐混凝土基础 435x435x550',-217.5,BASE_Y-166,13);}
+function drawPumpBody(d){d.rect(-117.5,BASE_Y,117.5,BASE_Y+35);const cy=BASE_Y+35+95;d.circle(0,cy,95);d.circle(0,cy,78);d.arc(0,cy,86,200,340);d.rect(78,cy-40,210,cy+40);d.rect(205,cy-52,215,cy+52);d.rect(-120,FLANGE_Y-10,120,FLANGE_Y+10);d.line(-135,FLANGE_Y,135,FLANGE_Y,'中心线',4);[-100,100].forEach(x=>d.circle(x,FLANGE_Y,6));return cy;}
+function drawMotor(d,h2){const top=FLANGE_Y+h2,cb=top-55,mw=210/2,cw=297/2;d.rect(-mw,FLANGE_Y+10,mw,cb);for(let x=-Math.floor(mw)+12;x<mw;x+=14)d.line(x,FLANGE_Y+14,x,cb-6);d.rect(-cw,cb,cw,top);for(let x=-Math.floor(cw)+8;x<cw;x+=12)d.line(x,cb,x,top);return{top,cb,cw,mw};}
+function drawBox(d,d2,mw,cb,layer,color){const by=cb-120;d.rect(mw,by,d2,by+90,layer,color);d.circle(d2-10,by+45,5,layer,color);}
+function drawShaft(d,ext,layer,color){d.rect(-16,FLANGE_Y-ext,16,FLANGE_Y+30,layer,color);d.rect(-5,FLANGE_Y-ext+4,5,FLANGE_Y-ext+30,'轮廓');}
+function drawTop(d,ox,oy){d.rect(ox-217.5,oy-217.5,ox+217.5,oy+217.5);d.rect(ox-117.5,oy-117.5,ox+117.5,oy+117.5);d.circle(ox,oy,95);d.circle(ox,oy,30);[-1,1].forEach(sx=>[-1,1].forEach(sy=>d.circle(ox+sx*97.5,oy+sy*97.5,7)));d.text('基础平面尺寸',ox-90,oy+250,13);d.text('4-14 地脚孔 / 孔距195',ox-120,oy-250,12);}
+function makeDXF(cfg,mode,old){
+  const d=new DXF();drawFrame(d,mode);drawConcrete(d);const cy=drawPumpBody(d);
+  if(old){d.rect(-148.5,FLANGE_Y+old.h2-55,148.5,FLANGE_Y+old.h2,'原位置参考',GREY);d.text('改前 H2='+old.h2,-270,FLANGE_Y+old.h2,11,'原位置参考',GREY);d.line(old.d2,FLANGE_Y-130,old.d2,FLANGE_Y-20,'原位置参考',GREY);d.text('改前 D2='+old.d2,old.d2+4,FLANGE_Y-130,11,'原位置参考',GREY);}
+  const {top,cb,cw,mw}=drawMotor(d,cfg.h2);
+  const changed=mode==='修改后';
+  drawBox(d,cfg.d2,mw,cb,changed?'修改_D2':'轮廓',changed?BLUE:null);
+  drawShaft(d,cfg.shaft,changed?'修改_轴伸':'轮廓',changed?ORANGE:null);
+  d.line(-cw,top,cw,top,changed?'修改_H2':'轮廓',changed?RED:null);
+  d.line(0,BASE_Y-60,0,top+40,'中心线',4);d.text('电机轴线',6,BASE_Y-50,11,'中心线',4);
+  d.dimV(-370,FLANGE_Y,top,'H2 = '+cfg.h2,changed?'修改_H2':'尺寸',changed?RED:null);
+  d.dimH(top+45,-cw,cw,'风罩宽 297');
+  d.dimH(cb-150,0,cfg.d2,'D2 = '+cfg.d2,changed?'修改_D2':'尺寸',changed?BLUE:null);
+  d.text('轴伸 = E + '+cfg.shaft,30,FLANGE_Y-cfg.shaft-20,13,changed?'修改_轴伸':'文字',changed?ORANGE:null);
+  d.dimV(300,BASE_Y,BASE_Y+35,'35');d.dimH(BASE_Y-30,-117.5,117.5,'235 底板');d.dimH(BASE_Y-60,-217.5,217.5,'435 基础');
+  d.leader(cw-10,top-20,cw+40,top+80,'① H2: 罩壳轴向变形, 机身/安装面不动',changed?'修改_H2':'文字',changed?RED:null);
+  d.leader(cfg.d2-5,cb-90,cfg.d2+30,cb-60,'② D2: 外盖径向随动, 内部件不动 (297非D2)',changed?'修改_D2':'文字',changed?BLUE:null);
+  d.leader(16,FLANGE_Y-cfg.shaft,60,FLANGE_Y-cfg.shaft+40,'③ 轴伸+20, 键槽/法兰不动, 不加到H2',changed?'修改_轴伸':'文字',changed?ORANGE:null);
+  drawTop(d,-640,430);
+  return d.build();
+}
+
+/* ============ 需求解析（口语 → 变更计划） ============ */
+const DEFAULT={h2:418,d2:281,shaft:0};
+function firstNum(text,regs){for(const r of regs){const m=text.match(r);if(m)return parseInt(m[1],10);}return null;}
+function parseRequest(text){
+  const t=text.replace(/\s+/g,' ');
+  const h2=firstNum(t,[/H2\s*(?:目标|=|为|是|做到|改成|改到|调到)?\s*(\d{3})/i,/风罩(?:总)?高(?:度)?[^0-9]{0,8}(\d{3})/,/总高[^0-9]{0,8}(\d{3})/]);
+  const d2=firstNum(t,[/D2\s*(?:目标|=|为|是|做到|改成|改到|调到)?\s*(\d{3})/i,/接线盒(?:最外端)?(?:伸出|距离|到)[^0-9]{0,10}(\d{3})/,/径向伸出[^0-9]{0,8}(\d{3})/]);
+  let shaft=firstNum(t,[/(?:轴伸|轴端|轴头)[^0-9]{0,6}(?:加|增加|\+|\+)?\s*(\d{1,3})/,/E\s*\+\s*(\d{1,3})/,/(?:加|增加)\s*(\d{1,3})\s*(?:到)?轴/]);
+  const hasShaft=/(轴伸|轴端|轴头|标准轴伸)/.test(t);
+  if(hasShaft&&shaft===null)shaft=20;
+  const cfg={h2:h2??DEFAULT.h2,d2:d2??DEFAULT.d2,shaft:shaft??DEFAULT.shaft};
+  const detected=[];
+  if(h2!==null)detected.push('H2_AXIAL_HEIGHT');
+  if(d2!==null)detected.push('D2_RADIAL_TERMINAL_BOX');
+  if(hasShaft)detected.push('SHAFT_EXT_PLUS20');
+  return{cfg,detected,raw:t};
+}
+
+/* ============ 变更计划渲染 ============ */
+const RULES={
+  H2_AXIAL_HEIGHT:{color:'red',title:'① H2 · 轴向总高',measure:'安装法兰贴合面 → 风罩最高点',op:'deform 变形',obj:'罩壳本体（两侧壁变形，整罩随动）',immune:'绿色罩形 / 安装面 / 机身',warn:'443 是总高不是风罩长度；移动量不能从截图目测，须从原CAD实测。'},
+  D2_RADIAL_TERMINAL_BOX:{color:'blue',title:'② D2 · 径向伸出',measure:'竖直电机轴线 → 接线盒最外端',op:'move 平移',obj:'接线盒外盖（整体径向随动）',immune:'固定内部件 / 盒子上下高度',warn:'原图 297 不是 D2，不得用它替换目标值；不是改盒子高度。'},
+  SHAFT_EXT_PLUS20:{color:'orange',title:'③ 轴伸 · +20',measure:'新轴伸 = 江潮标准轴伸 E + 20',op:'extend 延长',obj:'轴段（沿电机轴向泵侧伸出）',immune:'键槽 / 虚线框内支撑与法兰 / 风罩H2',warn:'+20 不加到风罩 H2，不拉长虚线框内法兰；轴伸 E 需电机图确认。'}
+};
+function renderPlan(res){
+  const box=document.getElementById('plan');
+  if(!res.detected.length){box.innerHTML='<div class="empty">没有识别到明确变更。试试"把H2改成443"或"轴伸加20"。</div>';return;}
+  let html='';
+  for(const id of res.detected){
+    const r=RULES[id];const{cfg}=res;
+    let from='—',to='—';
+    if(id==='H2_AXIAL_HEIGHT'){from=cfg.h2!==DEFAULT.h2?DEFAULT.h2:'（同示意值）';to=cfg.h2+' mm';}
+    if(id==='D2_RADIAL_TERMINAL_BOX'){from=cfg.d2!==DEFAULT.d2?DEFAULT.d2:'（同示意值）';to=cfg.d2+' mm';}
+    if(id==='SHAFT_EXT_PLUS20'){from='标准轴伸 E';to='E + '+cfg.shaft+' mm';}
+    html+=`<div class="rcard ${r.color}"><h3>${r.title} <span class="tag ${r.color}">已识别</span></h3>
+      <div class="kv"><span>测量定义</span><b>${r.measure}</b>
+      <span>当前值</span><b>${from}</b><span>目标值</span><b style="color:var(--${r.color})">${to}</b>
+      <span>操作</span><b>${r.op} · ${r.obj}</b><span>保持不动</span><b>${r.immune}</b></div>
+      <div class="warn">⚠ ${r.warn}</div></div>`;
+  }
+  box.innerHTML=html;
+}
+
+/* ============ 对照 SVG ============ */
+function makeCompareSVG(cfg,old){
+  const SX=x=>430+x*0.62, SY=y=>660-y*0.62;
+  const part=(h,d,sh,col,dash,op)=>{
+    const top=FLANGE_Y+h,cb=top-55,mw=105,cw=148.5;let s='';
+    const st=`stroke="${col}" stroke-width="2" fill="none" ${dash?`stroke-dasharray="${dash}"`:''} opacity="${op}"`;
+    s+=`<rect x="${SX(-cw)}" y="${SY(top)}" width="${2*cw*0.62}" height="${55*0.62}" ${st}/>`;
+    s+=`<rect x="${SX(-mw)}" y="${SY(cb)}" width="${2*mw*0.62}" height="${(cb-(FLANGE_Y+10))*0.62}" ${st}/>`;
+    for(let x=-93;x<mw;x+=14)s+=`<line x1="${SX(x)}" y1="${SY(cb)}" x2="${SX(x)}" y2="${SY(FLANGE_Y+14)}" stroke="${col}" stroke-width="1" opacity="0.5"/>`;
+    const by=cb-120;
+    s+=`<rect x="${SX(mw)}" y="${SY(by+90)}" width="${(d-mw)*0.62}" height="${90*0.62}" ${st}/>`;
+    s+=`<rect x="${SX(-16)}" y="${SY(FLANGE_Y+30)}" width="${32*0.62}" height="${(30+sh)*0.62}" ${st}/>`;
+    return s;
+  };
+  const cy=BASE_Y+35+95;
+  const base=`<rect x="${SX(-217.5)}" y="${SY(0)}" width="${435*0.62}" height="${140*0.62}" fill="#eef1f5" stroke="#9aa4b2"/><rect x="${SX(-117.5)}" y="${SY(BASE_Y+35)}" width="${235*0.62}" height="${35*0.62}" fill="#dfe4ea" stroke="#6b7280"/><circle cx="${SX(0)}" cy="${SY(cy)}" r="${95*0.62}" fill="#f4f6f9" stroke="#6b7280"/><circle cx="${SX(0)}" cy="${SY(cy)}" r="${78*0.62}" fill="none" stroke="#9aa4b2"/><rect x="${SX(-120)}" y="${SY(FLANGE_Y+10)}" width="${240*0.62}" height="${20*0.62}" fill="#dfe4ea" stroke="#6b7280"/><line x1="${SX(0)}" y1="${SY(BASE_Y-30)}" x2="${SX(0)}" y2="${SY(FLANGE_Y+cfg.h2+40)}" stroke="#3b82f6" stroke-dasharray="6 5" opacity="0.6"/><text x="${SX(0)+8}" y="${SY(BASE_Y-20)}" font-size="12" fill="#3b82f6">电机轴线</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 760" class="preview">
+   <rect width="900" height="760" fill="#fff"/>
+   <text x="30" y="42" font-size="22" font-weight="700" fill="#1f2430">TD50-40G 改前 / 改后对照</text>
+   <text x="30" y="68" font-size="13" fill="#5b6472">灰色虚线 = 修改前 · 彩色实线 = 修改后（CAD 成果以 DXF 为准）</text>
+   ${base}
+   ${part(old.h2,old.d2,old.shaft,'#9aa4b2','7 6',0.9)}
+   ${part(cfg.h2,cfg.d2,cfg.shaft,'#2563eb','',1)}
+   <line x1="${SX(-148.5)}" y1="${SY(FLANGE_Y+old.h2)}" x2="${SX(-148.5)}" y2="${SY(FLANGE_Y+cfg.h2)}" stroke="#dc2626" stroke-width="3"/>
+   <line x1="${SX(-148.5)-25}" y1="${SY(FLANGE_Y+old.h2)}" x2="${SX(-148.5)+25}" y2="${SY(FLANGE_Y+old.h2)}" stroke="#dc2626" stroke-width="2"/>
+   <line x1="${SX(-148.5)-25}" y1="${SY(FLANGE_Y+cfg.h2)}" x2="${SX(-148.5)+25}" y2="${SY(FLANGE_Y+cfg.h2)}" stroke="#dc2626" stroke-width="2"/>
+   <text x="70" y="${SY((FLANGE_Y+old.h2+FLANGE_Y+cfg.h2)/2)}" font-size="16" font-weight="700" fill="#dc2626">① H2: ${old.h2} → ${cfg.h2} mm</text>
+   <text x="70" y="${SY((FLANGE_Y+old.h2+FLANGE_Y+cfg.h2)/2)+20}" font-size="12" fill="#dc2626">罩壳轴向变形，机身/安装面/绿罩不动</text>
+   <line x1="${SX(old.d2)}" y1="${SY(cy)}" x2="${SX(cfg.d2)}" y2="${SY(cy)}" stroke="#2563eb" stroke-width="3"/>
+   <text x="${SX(cfg.d2)+12}" y="${SY(cy)-6}" font-size="15" font-weight="700" fill="#2563eb">② D2: ${old.d2} → ${cfg.d2}</text>
+   <text x="${SX(cfg.d2)+12}" y="${SY(cy)+14}" font-size="11" fill="#2563eb">外盖径向随动（297非D2）</text>
+   <line x1="${SX(16)}" y1="${SY(FLANGE_Y)}" x2="${SX(16)}" y2="${SY(FLANGE_Y-cfg.shaft)}" stroke="#ea580c" stroke-width="3"/>
+   <text x="${SX(16)+14}" y="${SY(FLANGE_Y-cfg.shaft/2)}" font-size="14" font-weight="700" fill="#ea580c">③ 轴伸 +${cfg.shaft}</text>
+   <rect x="700" y="640" width="18" height="4" fill="#9aa4b2"/><text x="726" y="647" font-size="12" fill="#5b6472">修改前</text>
+   <rect x="700" y="662" width="18" height="4" fill="#2563eb"/><text x="726" y="669" font-size="12" fill="#5b6472">修改后</text>
+   <text x="30" y="735" font-size="11" fill="#94a3b8">示意对照：真实改变量须从原CAD实测；正式替换原DWG前请人工复核。</text>
+  </svg>`;
+}
+
+/* ============ 下载 ============ */
+function download(name,content,mime){
+  // 注意：DXF 不能加 UTF-8 BOM，否则部分 CAD 无法打开；中文已用 \U+ 转义，全 ASCII 内容无需 BOM
+  const blob=new Blob([content],{type:mime||'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+let STATE=null;
+function run(){
+  const text=document.getElementById('req').value.trim();
+  const stOk=document.getElementById('stOk'),stErr=document.getElementById('stErr');
+  stOk.style.display='none';stErr.style.display='none';
+  if(!text){stErr.textContent='请先输入你的改图要求。';stErr.style.display='block';return;}
+  const btn=document.getElementById('run');btn.disabled=true;btn.textContent='正在改图…';
+  setTimeout(()=>{
+    try{
+      const res=parseRequest(text);
+      if(!res.detected.length){stErr.textContent='没有识别到明确的变更要求，请参考示例输入。';stErr.style.display='block';btn.disabled=false;btn.textContent='开始改图';return;}
+      const old={h2:DEFAULT.h2,d2:DEFAULT.d2,shaft:0};
+      const dxfAfter=makeDXF(res.cfg,'修改后',old);
+      const dxfBefore=makeDXF(old,'修改前',null);
+      const svg=makeCompareSVG(res.cfg,old);
+      STATE={res,old,dxfAfter,dxfBefore,svg};
+      renderPlan(res);
+      document.getElementById('preview').innerHTML=svg;
+      document.getElementById('downloads').style.display='flex';
+      const notes=[];
+      if(/297/.test(text))notes.push('已注意：297 不是 D2，未用它替换目标值。');
+      notes.push('已按知识卡执行约束：机身/安装面/内部件/键槽/法兰保持不动，+20 未串入 H2。');
+      stOk.textContent='✓ 改图完成：识别 '+res.detected.length+' 项变更，已生成对照图与 CAD 文件。'+notes.join(' ');
+      stOk.style.display='block';
+    }catch(e){stErr.textContent='出错：'+e.message;stErr.style.display='block';}
+    btn.disabled=false;btn.textContent='开始改图';
+  },350);
+}
+document.getElementById('run').addEventListener('click',run);
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.getElementById('req').value=c.dataset.t;document.getElementById('req').focus();}));
+document.getElementById('dlAfter').addEventListener('click',()=>STATE&&download('TD50-40G_修改后.dxf',STATE.dxfAfter));
+document.getElementById('dlBefore').addEventListener('click',()=>STATE&&download('TD50-40G_修改前.dxf',STATE.dxfBefore));
+document.getElementById('dlSvg').addEventListener('click',()=>STATE&&download('TD50-40G_对照图.svg',STATE.svg,'image/svg+xml;charset=utf-8'));
+// 默认填入图片里的完整要求
+document.getElementById('req').value='按新电机改：风罩高度做到443，接线盒伸出改成294，轴端再加20';
+</script>
+</body>
+</html>
