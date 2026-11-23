@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "profile_id": "td50-40g",
+  "model": "TD50-40G",
+  "title": "立式管道离心泵安装图",
+  "source_file": "TD50-40G.dwg",
+  "notes": "本档案是 TD50-40G 的定标与锚点数据。几何规则逻辑在 src/geometry_modifier.py，数值与坐标只存在这里；换型号 = 新建档案，不改代码。",
+  "review": {
+    "status": "confirmed",
+    "confirmed_by": "项目基准（TD50 定版任务 d663f685b4b9）",
+    "confirmed_at": "2026-11-21",
+    "notes": "已用 golden clean.dxf / result.dxf 逐 handle 对齐验证"
+  },
+  "fingerprint": {
+    "sha256": "27479282fe3494f0bfb5a770065508b34e74b64f7251845184a27dae49026277",
+    "filenames": [
+      "TD50-40G.dwg",
+      "TD50-40G_工作副本.dwg"
+    ],
+    "required_handles": [
+      "C55",
+      "C5A",
+      "C5F",
+      "C5C",
+      "B7A",
+      "B7D",
+      "B7E"
+    ],
+    "markers": [
+      "118kg",
+      "H=400~600"
+    ],
+    "entity_count": [
+      2860,
+      2890
+    ],
+    "bbox": {
+      "min": [
+        49619.6,
+        -3089.1
+      ],
+      "max": [
+        53084.6,
+        1811.4
+      ],
+      "tolerance": 5.0
+    }
+  },
+  "calibration": {
+    "vertical": {
+      "units_per_mm": 1.9523376623376625,
+      "formula": "(hood_top_y - foundation_top_y) / total_height_mm",
+      "datum_from": "hood_top_y",
+      "datum_to": "foundation_top_y",
+      "reference_mm": 770.0,
+      "basis": "风罩顶 1501.2 到基础平面 -2.1 为 770mm；尺寸链 490+175+105=770 校准"
+    },
+    "horizontal": {
+      "units_per_mm": 1.248148148148148,
+      "formula": "297 尺寸线实长 370.7 / 297",
+      "cross_check": {
+        "datum_from": "axis_x",
+        "datum_to": "box_outer_x",
+        "reference_mm": 281.8,
+        "note": "(51505.9-51154.2)/1.2481=281.8，与 D2 原值一致"
+      },
+      "critical_warning": "不能用风罩左右壁间距 440.7 定标；机械图尺寸线两端内缩，只有尺寸线本身长度对应标注值。"
+    }
+  },
+  "datums": {
+    "hood_top_y": 1501.2,
+    "hood_cap_bottom_y": 1327.5,
+    "foundation_top_y": -2.1,
+    "flange_y": 544.55,
+    "hood_left_x": 50932.4,
+    "hood_right_x": 51373.1,
+    "axis_x": 51154.2,
+    "box_outer_x": 51505.9,
+    "box_bottom_y": 737.0,
+    "cover_x0": 51386.0,
+    "cable_x0": 51358.0,
+    "shaft_bottom_y": 519.5,
+    "shaft_top_y": 567.8,
+    "keyway_box": [
+      51140.0,
+      51170.0,
+      526.0,
+      556.0
+    ],
+    "knob_seat_box": [
+      51350.0,
+      51420.0,
+      985.0,
+      1040.0
+    ],
+    "total_dim_line_x": 52096.5
+  },
+  "original": {
+    "H2": 490.0,
+    "D2": 281.8,
+    "shaft_plus": 20.0,
+    "total_height": 770.0,
+    "lower_segments": 280.0
+  },
+  "defaults": {
+    "H2": 443.0,
+    "D2": 294.0,
+    "shaft": 20.0
+  },
+  "protected_texts": [
+    "297",
+    "175",
+    "105",
+    "400",
+    "200",
+    "118kg"
+  ],
+  "rules": {
+    "H2": {
+      "label": "风罩总高",
+      "color_marker": "红色",
+      "region": {
+        "x": [
+          50912.4,
+          51393.1
+        ],
+        "min_ymax": 1321.5,
+        "max_ymin": 1521.2,
+        "max_yspan": 300.0,
+        "max_xspan": 700.0,
+        "clip_threshold_y": 1321.5,
+        "exclude_handles": [
+          "C55"
+        ],
+        "companion_handles": [
+          "C5A"
+        ]
+      },
+      "measure_handle": "C53",
+      "total_height_link": {
+        "text_contains": "770",
+        "line_x": 52096.5,
+        "line_x_tolerance": 2.0,
+        "line_min_top_y": 1200.0
+      }
+    },
+    "D2": {
+      "label": "接线盒径向伸出",
+      "color_marker": "蓝色",
+      "region": {
+        "y": [
+          730.0,
+          1045.0
+        ],
+        "x_max": 51655.9,
+        "x_min": 50904.2,
+        "max_xspan": 800.0,
+        "endpoint_x_min": 51386.0,
+        "cable_neck": {
+          "bbox_x_min": 51358.0,
+          "bbox_ymin_min": 1040.0
+        },
+        "exclude_bboxes": [
+          [
+            51350.0,
+            51420.0,
+            985.0,
+            1040.0
+          ]
+        ]
+      },
+      "measure_handle": "9FA"
+    },
+    "shaft": {
+      "label": "轴伸加长",
+      "color_marker": "橙色",
+      "bottom_handle": "B7A",
+      "side_handles": [
+        "B7D",
+        "B7E"
+      ],
+      "keyway_box": [
+        51140.0,
+        51170.0,
+        526.0,
+        556.0
+      ]
+    }
+  },
+  "annotation": {
+    "layers": {
+      "H2": {
+        "name": "变更_H2_红色",
+        "color": 1
+      },
+      "D2": {
+        "name": "变更_D2_蓝色",
+        "color": 5
+      },
+      "shaft": {
+        "name": "变更_轴伸_橙色",
+        "color": 30
+      }
+    },
+    "H2": {
+      "dim_x": 50880.0,
+      "tick": 52.0,
+      "arrow_size": 14.0,
+      "text_dx": -72.0,
+      "text_dy": -182.0,
+      "text_height": 45.0,
+      "annotation_top_y": 1283.81,
+      "annotation_bottom_y": 544.55,
+      "annotation_top_note": "锚定风罩真实顶面(封板顶线, 改后 y=1283.81)，不再对齐 297 宽度标注引出线顶(1409.44)，避免红线超出真实物体高度"
+    },
+    "D2": {
+      "text_dy": 46.0,
+      "text_height": 42.0,
+      "arrow_size": 14.0,
+      "arrow_up_size": 13.0,
+      "box_bottom_y": 737.0,
+      "y_line": 1409.44,
+      "text_x": 51613.0,
+      "text_y": 1433.0
+    },
+    "shaft": {
+      "frame": [
+        [
+          50330.0,
+          300.0
+        ],
+        [
+          50720.0,
+          300.0
+        ],
+        [
+          50720.0,
+          588.0
+        ],
+        [
+          50330.0,
+          588.0
+        ],
+        [
+          50330.0,
+          300.0
+        ]
+      ],
+      "text_x": 50346.0,
+      "text_rows": [
+        [
+          540.0,
+          32.0,
+          "③ 轴伸+{target:g}：需独立电机图"
+        ],
+        [
+          480.0,
+          30.0,
+          "轴端沿电机轴线向泵侧伸出"
+        ],
+        [
+          420.0,
+          30.0,
+          "键槽/435基础边/法兰不拉长"
+        ],
+        [
+          360.0,
+          30.0,
+          "虚线框仅示意连接区，非轴端定位"
+        ]
+      ],
+      "leader_from": [
+        50720.0,
+        474.0
+      ],
+      "leader_to_x": 51046.0,
+      "leader_to_dy": 8.0,
+      "arrow_x": 51052.0,
+      "arrow_size": 12.0
+    }
+  },
+  "compare_view": {
+    "zoom_viewport": [
+      50280,
+      52250,
+      280,
+      1520
+    ],
+    "zoom_ann_font": 16,
+    "zoom_orig_font": 11
+  }
+}

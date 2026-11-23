@@ -93,7 +93,7 @@ Runtime data is intentionally excluded from version control:
 - preview PNG/SVG files
 - local calibrated profiles
 
-This keeps the public repository free of proprietary engineering data.
+The repository includes two DWG examples approved for public release, TD50-40G and 25QYL-2SL, and the matching TD50 calibration profile.
 
 ## Deployment Boundary
 

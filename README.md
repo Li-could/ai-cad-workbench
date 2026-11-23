@@ -31,12 +31,15 @@
 ## 快速开始
 
 ```powershell
-cd D:\ai全栈开发\engineering-drawing-ai
+git clone https://github.com/Li-could/ai-cad-workbench.git
+cd ai-cad-workbench
 python -m pip install -r requirements.txt
 python cli.py check
 python app.py
 # 浏览器打开 http://127.0.0.1:8900/
 ```
+
+仓库附带 TD50-40G 和 25QYL-2SL 两份 DWG 原图，以及 TD50 对应的标定档案。使用 Python 3.11 安装上述依赖，并在本机安装 ODA File Converter 后，即可从工作台运行 TD50 几何修改、25QYL 标注换算和 25QYL 真实毫米三项演示。
 
 一键跑真实示例（Web）：
 

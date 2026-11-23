@@ -1,7 +1,7 @@
 # 运行时：Python 3.11（vendored 依赖按 cp311 编译）
 #
 # 安装：python -m pip install -r requirements.txt
-# 离线机器：src/ 下已 vendored 同名版本，启动时自动回退，无需联网。
+# 离线安装：预先下载与目标平台匹配的依赖包，再用 pip --no-index --find-links 安装。
 
 # Web 层
 fastapi==0.141.1

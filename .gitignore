@@ -15,7 +15,7 @@ env/
 
 # Runtime data and generated outputs
 data/
-input/
+/input/*
 output/
 workspace/
 *.log
@@ -25,6 +25,8 @@ workspace/
 *.dxf
 !examples/sample.dxf
 !tests/sample.dxf
+!/input/TD50-40G.dwg
+!/input/25QYL-2SL.dwg
 _diag*
 _render*
 _latest*
@@ -39,7 +41,8 @@ tools/*.part*
 tools/oda_url.txt
 
 # Local calibration profiles may contain customer geometry
-knowledge/drawings/
+/knowledge/drawings/*
+!/knowledge/drawings/td50-40g.profile.json
 
 # OS / editor
 .DS_Store
